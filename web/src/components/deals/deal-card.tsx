@@ -44,7 +44,9 @@ export function DealCard({ deal, stages, contacts, companies, contactName }: Dea
 
   return (
     <div className="rounded-lg border border-border bg-background p-3">
-      <p className="font-medium text-foreground">{deal.name}</p>
+      <Link href={`/deals/${deal.id}`} className="font-medium text-foreground hover:underline">
+        {deal.name}
+      </Link>
       <p className="text-sm text-muted-foreground">
         {new Intl.NumberFormat(undefined, {
           style: "currency",

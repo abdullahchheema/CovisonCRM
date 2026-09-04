@@ -53,9 +53,15 @@ export function TaskRow({ task, contacts, contactName }: TaskRowProps) {
           className="size-4"
         />
         <div>
-          <p className={cn("text-sm text-foreground", isDone && "text-muted-foreground line-through")}>
+          <Link
+            href={`/tasks/${task.id}`}
+            className={cn(
+              "text-sm text-foreground hover:underline",
+              isDone && "text-muted-foreground line-through",
+            )}
+          >
             {task.title}
-          </p>
+          </Link>
           <div className="flex gap-2 text-xs text-muted-foreground">
             {task.due_at && <span>Due {new Date(task.due_at).toLocaleDateString()}</span>}
             {task.priority && <span className="capitalize">{task.priority}</span>}
