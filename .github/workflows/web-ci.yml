@@ -1,0 +1,127 @@
+name: Web CI
+
+# Checks the new Next.js app + Supabase schema — separate from deploy.yml,
+# which only builds/pushes the legacy Go+Vite app and never touches this
+# code. Nothing here deploys anything; it's a pass/fail gate only.
+on:
+  push:
+    paths:
+      - "web/**"
+      - "supabase/**"
+      - ".github/workflows/web-ci.yml"
+  pull_request:
+    paths:
+      - "web/**"
+      - "supabase/**"
+      - ".github/workflows/web-ci.yml"
+
+jobs:
+  web-checks:
+    name: Typecheck, lint, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx next typegen && npx tsc --noEmit
+
+      - name: Lint
+        run: npx eslint .
+
+      - name: Build
+        run: npm run build
+        env:
+          # Dummy values — the build only needs these to exist, not to be
+          # valid; no live Supabase calls happen at build time. Do not put
+          # real project secrets here — this workflow runs on every push,
+          # including from forks on a public repo.
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: placeholder-key
+
+  schema-checks:
+    name: Migrations apply + RLS coverage
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install psql client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Minimal Supabase-platform shim (auth/storage schemas, roles)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -d postgres <<'SQL'
+          create role authenticated nologin;
+          create role anon nologin;
+          create role supabase_auth_admin nologin createrole;
+          create schema auth;
+          create table auth.users (
+            id uuid primary key default gen_random_uuid(),
+            email text,
+            raw_user_meta_data jsonb not null default '{}'::jsonb
+          );
+          create or replace function auth.uid() returns uuid
+            language sql stable as $$ select null::uuid $$;
+          create or replace function auth.jwt() returns jsonb
+            language sql stable as $$ select '{}'::jsonb $$;
+          create schema storage;
+          create table storage.buckets (
+            id text primary key, name text not null, public boolean not null default false
+          );
+          create table storage.objects (
+            id uuid primary key default gen_random_uuid(),
+            bucket_id text references storage.buckets(id),
+            name text, owner uuid, created_at timestamptz default now()
+          );
+          create or replace function storage.foldername(name text) returns text[]
+            language sql immutable as $$
+              select (regexp_split_to_array(name, '/'))[1 : greatest(array_length(regexp_split_to_array(name, '/'), 1) - 1, 0)]
+            $$;
+          grant usage on schema auth, storage to authenticated, anon, supabase_auth_admin;
+          SQL
+
+      - name: Apply all migrations in order
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for f in $(ls supabase/migrations/*.sql | sort); do
+            echo "Applying $f"
+            psql -h localhost -U postgres -d postgres -v ON_ERROR_STOP=1 -f "$f"
+          done
+
+      - name: RLS coverage check (both queries must return zero rows)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          output=$(psql -h localhost -U postgres -d postgres -t -A -f supabase/tests/rls_meta.sql)
+          if [ -n "$(echo "$output" | tr -d '[:space:]')" ]; then
+            echo "RLS coverage check failed — one or more tables are missing RLS or have no policies:"
+            echo "$output"
+            exit 1
+          fi
+          echo "RLS coverage check passed: every table has RLS enabled with at least one policy."
