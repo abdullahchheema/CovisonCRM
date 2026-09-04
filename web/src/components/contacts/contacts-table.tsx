@@ -2,10 +2,21 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -43,9 +54,13 @@ export function ContactsTable({
   ownerNameById,
   currentUserId,
 }: ContactsTableProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -60,6 +75,50 @@ export function ContactsTable({
       );
     });
   }, [contacts, search, status, onlyMine, currentUserId]);
+
+  const allVisibleSelected =
+    filtered.length > 0 && filtered.every((contact) => selected.has(contact.id));
+
+  const toggleAll = () => {
+    if (allVisibleSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map((contact) => contact.id)));
+    }
+  };
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const bulkDelete = async () => {
+    setIsBulkDeleting(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("contacts")
+      .update({ deleted_at: new Date().toISOString() })
+      .in("id", Array.from(selected));
+
+    setIsBulkDeleting(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${selected.size} contact${selected.size === 1 ? "" : "s"} deleted`);
+    setSelected(new Set());
+    setConfirmBulkDelete(false);
+    router.refresh();
+  };
 
   const exportCsv = () => {
     const header = ["Name", "Email", "Phone", "Job title", "Status", "Company", "Owner"];
@@ -119,6 +178,48 @@ export function ContactsTable({
         </Button>
       </div>
 
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2">
+          <span className="text-sm text-foreground">{selected.size} selected</span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setConfirmBulkDelete(true)}
+          >
+            Delete selected
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelected(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selected.size} contacts?</DialogTitle>
+            <DialogDescription>
+              This removes them from lists and searches. This can&apos;t be undone
+              from the app yet.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmBulkDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={bulkDelete} disabled={isBulkDeleting}>
+              {isBulkDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <p className="text-sm text-muted-foreground">
@@ -132,6 +233,15 @@ export function ContactsTable({
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border text-left text-muted-foreground">
+                <th className="w-10 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    onChange={toggleAll}
+                    className="size-4"
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Company</th>
                 <th className="px-4 py-3 font-medium">Email</th>
@@ -143,6 +253,15 @@ export function ContactsTable({
             <tbody>
               {filtered.map((contact) => (
                 <tr key={contact.id} className="border-b border-border last:border-0">
+                  <td className="px-4 py-3">
+                    <input
+                      type="checkbox"
+                      checked={selected.has(contact.id)}
+                      onChange={() => toggleOne(contact.id)}
+                      className="size-4"
+                      aria-label={`Select ${contact.name}`}
+                    />
+                  </td>
                   <td className="px-4 py-3 font-medium text-foreground">
                     <Link href={`/contacts/${contact.id}`} className="hover:underline">
                       {contact.name}
