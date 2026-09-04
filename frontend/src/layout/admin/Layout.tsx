@@ -56,7 +56,7 @@ const Layout = () => {
                         className={({ isActive }) =>
                           `flex items-center gap-3 pl-7 pr-3 py-2 rounded-md text-sm font-medium transition-colors ${
                             isActive
-                              ? "bg-primary text-white"
+                              ? "bg-gradient-brand text-white shadow-glow"
                               : "text-foreground hover:bg-accent"
                           }`
                         }

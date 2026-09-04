@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",
+    "@fontsource-variable/plus-jakarta-sans": "^5.2.8",
     "@hello-pangea/dnd": "^18.0.1",
     "@lexical/react": "^0.41.0",
     "@lexical/rich-text": "^0.41.0",

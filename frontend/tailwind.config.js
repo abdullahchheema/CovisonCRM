@@ -62,7 +62,10 @@ const config = {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ['"DM Sans Variable"', '"DM Sans"', "sans-serif"],
+        sans: ['"Plus Jakarta Sans Variable"', '"Plus Jakarta Sans"', "sans-serif"],
+      },
+      boxShadow: {
+        glow: "0 8px 24px -8px hsl(var(--primary) / 0.45)",
       },
     },
   },

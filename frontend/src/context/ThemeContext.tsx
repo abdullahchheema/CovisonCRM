@@ -5,7 +5,7 @@ type ThemeContextType = [boolean, Dispatch<SetStateAction<boolean>>];
 export const ThemeContext = createContext<ThemeContextType>([false, () => {}]);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [isDark, setIsDark] = useState(() => localStorage.getItem("mockapi-theme") === "true");
+  const [isDark, setIsDark] = useState(() => localStorage.getItem("crm-theme") === "true");
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", isDark);

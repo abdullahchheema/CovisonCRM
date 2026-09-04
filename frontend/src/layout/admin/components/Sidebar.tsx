@@ -13,7 +13,7 @@ const Sidebar = () => {
     setOpenGroups((prev) => ({ ...prev, [link]: !prev[link] }));
 
   return (
-    <aside className="group fixed left-0 top-14 bottom-0 z-30 w-14 hover:w-52 bg-card border-r transition-[width] duration-200 ease-in-out overflow-hidden">
+    <aside className="group fixed left-0 top-14 bottom-0 z-30 w-14 hover:w-52 bg-sidebar/95 backdrop-blur-sm border-r border-sidebar-border transition-[width] duration-200 ease-in-out overflow-hidden">
       <nav className="p-2 mt-1 space-y-0.5">
         {visibleItems.map((item) =>
           item.children ? (
@@ -48,7 +48,7 @@ const Sidebar = () => {
                       className={({ isActive }) =>
                         `flex items-center gap-3 pl-8 pr-3 py-2 rounded-md text-sm transition-colors whitespace-nowrap ${
                           isActive
-                            ? "bg-primary/10 text-primary"
+                            ? "bg-gradient-brand text-white shadow-glow"
                             : "text-muted-foreground hover:text-foreground hover:bg-accent"
                         }`
                       }
