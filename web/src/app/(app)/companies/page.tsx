@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { CompanyFormDialog } from "@/components/companies/company-form-dialog";
 
@@ -43,7 +44,9 @@ export default async function CompaniesPage() {
               {companies.map((company) => (
                 <tr key={company.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium text-foreground">
-                    {company.name}
+                    <Link href={`/companies/${company.id}`} className="hover:underline">
+                      {company.name}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {company.domain ?? "—"}

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { ContactFormDialog } from "@/components/contacts/contact-form-dialog";
 
@@ -62,7 +63,9 @@ export default async function ContactsPage() {
               {contacts.map((contact) => (
                 <tr key={contact.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3 font-medium text-foreground">
-                    {contact.name}
+                    <Link href={`/contacts/${contact.id}`} className="hover:underline">
+                      {contact.name}
+                    </Link>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {contact.company_id

@@ -211,6 +211,291 @@ export type Database = {
         };
         Relationships: [];
       };
+      tags: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          color: string;
+          created_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          color?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          color?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      contact_tags: {
+        Row: {
+          contact_id: string;
+          tag_id: string;
+          organization_id: string;
+          created_at: string;
+        };
+        Insert: {
+          contact_id: string;
+          tag_id: string;
+          organization_id: string;
+          created_at?: string;
+        };
+        Update: {
+          contact_id?: string;
+          tag_id?: string;
+          organization_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      activities: {
+        Row: {
+          id: string;
+          organization_id: string;
+          type: string;
+          body: string | null;
+          metadata: Record<string, unknown> | null;
+          contact_id: string | null;
+          company_id: string | null;
+          deal_id: string | null;
+          project_id: string | null;
+          actor_id: string | null;
+          occurred_at: string;
+          created_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          type: string;
+          body?: string | null;
+          metadata?: Record<string, unknown> | null;
+          contact_id?: string | null;
+          company_id?: string | null;
+          deal_id?: string | null;
+          project_id?: string | null;
+          actor_id?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          type?: string;
+          body?: string | null;
+          metadata?: Record<string, unknown> | null;
+          contact_id?: string | null;
+          company_id?: string | null;
+          deal_id?: string | null;
+          project_id?: string | null;
+          actor_id?: string | null;
+          occurred_at?: string;
+          created_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      pipelines: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          is_default: boolean;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          is_default?: boolean;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      pipeline_stages: {
+        Row: {
+          id: string;
+          organization_id: string;
+          pipeline_id: string;
+          name: string;
+          position: number;
+          probability: number | null;
+          color: string | null;
+          is_won: boolean;
+          is_lost: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          pipeline_id: string;
+          name: string;
+          position?: number;
+          probability?: number | null;
+          color?: string | null;
+          is_won?: boolean;
+          is_lost?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          pipeline_id?: string;
+          name?: string;
+          position?: number;
+          probability?: number | null;
+          color?: string | null;
+          is_won?: boolean;
+          is_lost?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      deals: {
+        Row: {
+          id: string;
+          organization_id: string;
+          pipeline_id: string;
+          stage_id: string;
+          contact_id: string | null;
+          company_id: string | null;
+          owner_id: string | null;
+          name: string;
+          value: number;
+          currency: string;
+          expected_close_date: string | null;
+          description: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          pipeline_id: string;
+          stage_id: string;
+          contact_id?: string | null;
+          company_id?: string | null;
+          owner_id?: string | null;
+          name: string;
+          value?: number;
+          currency?: string;
+          expected_close_date?: string | null;
+          description?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          pipeline_id?: string;
+          stage_id?: string;
+          contact_id?: string | null;
+          company_id?: string | null;
+          owner_id?: string | null;
+          name?: string;
+          value?: number;
+          currency?: string;
+          expected_close_date?: string | null;
+          description?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      tasks: {
+        Row: {
+          id: string;
+          organization_id: string;
+          assigned_to: string | null;
+          created_by: string | null;
+          contact_id: string | null;
+          company_id: string | null;
+          deal_id: string | null;
+          project_id: string | null;
+          title: string;
+          description: string | null;
+          priority: string | null;
+          status: string;
+          due_at: string | null;
+          completed_at: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          contact_id?: string | null;
+          company_id?: string | null;
+          deal_id?: string | null;
+          project_id?: string | null;
+          title: string;
+          description?: string | null;
+          priority?: string | null;
+          status?: string;
+          due_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          contact_id?: string | null;
+          company_id?: string | null;
+          deal_id?: string | null;
+          project_id?: string | null;
+          title?: string;
+          description?: string | null;
+          priority?: string | null;
+          status?: string;
+          due_at?: string | null;
+          completed_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
