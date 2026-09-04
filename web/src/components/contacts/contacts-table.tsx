@@ -41,11 +41,19 @@ interface ContactRow {
   owner_id: string | null;
 }
 
+interface Tag {
+  id: string;
+  name: string;
+  color: string;
+}
+
 interface ContactsTableProps {
   contacts: ContactRow[];
   companyNameById: Record<string, string>;
   ownerNameById: Record<string, string>;
   currentUserId: string;
+  organizationId: string;
+  tags: Tag[];
 }
 
 export function ContactsTable({
@@ -53,6 +61,8 @@ export function ContactsTable({
   companyNameById,
   ownerNameById,
   currentUserId,
+  organizationId,
+  tags,
 }: ContactsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -61,6 +71,9 @@ export function ContactsTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
+  const [bulkTagId, setBulkTagId] = useState("");
+  const [isBulkTagging, setIsBulkTagging] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -117,6 +130,35 @@ export function ContactsTable({
     toast.success(`${selected.size} contact${selected.size === 1 ? "" : "s"} deleted`);
     setSelected(new Set());
     setConfirmBulkDelete(false);
+    router.refresh();
+  };
+
+  const bulkAddTag = async () => {
+    if (!bulkTagId) return;
+    setIsBulkTagging(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("contact_tags")
+      .upsert(
+        Array.from(selected).map((contactId) => ({
+          contact_id: contactId,
+          tag_id: bulkTagId,
+          organization_id: organizationId,
+        })),
+        { onConflict: "contact_id,tag_id", ignoreDuplicates: true },
+      );
+
+    setIsBulkTagging(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const tagName = tags.find((t) => t.id === bulkTagId)?.name ?? "Tag";
+    toast.success(`${tagName} added to ${selected.size} contact${selected.size === 1 ? "" : "s"}`);
+    setBulkTagOpen(false);
+    setBulkTagId("");
     router.refresh();
   };
 
@@ -183,6 +225,15 @@ export function ContactsTable({
           <span className="text-sm text-foreground">{selected.size} selected</span>
           <Button
             type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setBulkTagOpen(true)}
+            disabled={tags.length === 0}
+          >
+            Add tag
+          </Button>
+          <Button
+            type="button"
             variant="destructive"
             size="sm"
             onClick={() => setConfirmBulkDelete(true)}
@@ -215,6 +266,30 @@ export function ContactsTable({
             </Button>
             <Button variant="destructive" onClick={bulkDelete} disabled={isBulkDeleting}>
               {isBulkDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkTagOpen} onOpenChange={setBulkTagOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add tag to {selected.size} contacts</DialogTitle>
+          </DialogHeader>
+          <Select value={bulkTagId} onChange={(e) => setBulkTagId(e.target.value)}>
+            <option value="">Select a tag...</option>
+            {tags.map((tag) => (
+              <option key={tag.id} value={tag.id}>
+                {tag.name}
+              </option>
+            ))}
+          </Select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setBulkTagOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={bulkAddTag} disabled={isBulkTagging || !bulkTagId}>
+              {isBulkTagging ? "Adding..." : "Add tag"}
             </Button>
           </DialogFooter>
         </DialogContent>

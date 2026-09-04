@@ -6,19 +6,25 @@ import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 export default async function ContactsPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: contacts, error }, { data: companies }, members] = await Promise.all([
-    supabase
-      .from("contacts")
-      .select("id, name, email, phone, job_title, status, company_id, owner_id, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("companies")
-      .select("id, name")
-      .is("deleted_at", null)
-      .order("name"),
-    getOrgMemberOptions(supabase),
-  ]);
+  const [{ data: contacts, error }, { data: companies }, members, { data: tags }] =
+    await Promise.all([
+      supabase
+        .from("contacts")
+        .select("id, name, email, phone, job_title, status, company_id, owner_id, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("companies")
+        .select("id, name")
+        .is("deleted_at", null)
+        .order("name"),
+      getOrgMemberOptions(supabase),
+      supabase
+        .from("tags")
+        .select("id, name, color")
+        .is("deleted_at", null)
+        .order("name"),
+    ]);
 
   const companyNameById = Object.fromEntries(
     (companies ?? []).map((company) => [company.id, company.name]),
@@ -40,6 +46,8 @@ export default async function ContactsPage() {
           companyNameById={companyNameById}
           ownerNameById={ownerNameById}
           currentUserId={profile.id}
+          organizationId={org.id}
+          tags={tags ?? []}
         />
       )}
     </div>
