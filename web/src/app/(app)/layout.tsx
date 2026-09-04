@@ -12,6 +12,7 @@ const NAV_ITEMS = [
   { href: "/tasks", label: "Tasks" },
   { href: "/tags", label: "Tags" },
   { href: "/team", label: "Team" },
+  { href: "/settings", label: "Settings" },
 ];
 
 export default async function AppLayout({
