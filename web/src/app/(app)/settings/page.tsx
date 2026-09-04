@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { ProfileSettingsForm } from "@/components/settings/profile-settings-form";
 import { WorkspaceSettingsForm } from "@/components/settings/workspace-settings-form";
@@ -14,6 +15,9 @@ export default async function SettingsPage() {
         fullName={profile.full_name}
       />
       <WorkspaceSettingsForm organizationId={org.id} name={org.name} slug={org.slug} />
+      <Link href="/settings/activity" className="text-sm text-primary hover:underline">
+        View activity log →
+      </Link>
     </div>
   );
 }
