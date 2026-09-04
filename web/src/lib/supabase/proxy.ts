@@ -6,9 +6,9 @@ const hasEnvVars = Boolean(
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
 );
 
-// Routes that don't require a signed-in user. Everything under /dashboard is
-// the authenticated app; adjust as real route groups land.
-const PUBLIC_PATH_PREFIXES = ["/login", "/signup", "/auth"];
+// Routes that don't require a signed-in user. Everything under /dashboard
+// and /onboarding is the authenticated app; adjust as real route groups land.
+const PUBLIC_PATH_PREFIXES = ["/auth"];
 
 function isPublicPath(pathname: string): boolean {
   return (
@@ -66,7 +66,7 @@ export async function updateSession(request: NextRequest) {
 
   if (!user && !isPublicPath(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
+    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
