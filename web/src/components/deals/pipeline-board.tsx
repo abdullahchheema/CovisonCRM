@@ -33,6 +33,7 @@ interface PipelineBoardProps {
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
   members: { id: string; name: string }[];
+  currentUserId: string;
 }
 
 function DraggableCard({
@@ -94,8 +95,10 @@ export function PipelineBoard({
   contacts,
   companies,
   members,
+  currentUserId,
 }: PipelineBoardProps) {
   const [deals, setDeals] = useState(initialDeals);
+  const [onlyMine, setOnlyMine] = useState(false);
 
   // DealCard's manual stage <select> (kept for keyboard/accessibility —
   // dnd-kit's pointer drag isn't keyboard-operable) triggers router.refresh()
@@ -126,12 +129,15 @@ export function PipelineBoard({
   );
 
   const dealsByStage = useMemo(() => {
+    const visibleDeals = onlyMine
+      ? deals.filter((deal) => deal.owner_id === currentUserId)
+      : deals;
     const map = new Map<string, Deal[]>();
     for (const stage of stages) {
-      map.set(stage.id, deals.filter((deal) => deal.stage_id === stage.id));
+      map.set(stage.id, visibleDeals.filter((deal) => deal.stage_id === stage.id));
     }
     return map;
-  }, [deals, stages]);
+  }, [deals, stages, onlyMine, currentUserId]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -163,6 +169,15 @@ export function PipelineBoard({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+      <label className="mb-3 flex w-fit items-center gap-2 text-sm text-muted-foreground">
+        <input
+          type="checkbox"
+          checked={onlyMine}
+          onChange={(e) => setOnlyMine(e.target.checked)}
+          className="size-4"
+        />
+        Only mine
+      </label>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (
           <div key={stage.id} className="w-64 shrink-0">

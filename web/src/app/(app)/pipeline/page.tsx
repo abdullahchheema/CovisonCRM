@@ -4,7 +4,7 @@ import { PipelineBoard } from "@/components/deals/pipeline-board";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function PipelinePage() {
-  const { supabase, org } = await requireOrgContext();
+  const { supabase, org, profile } = await requireOrgContext();
 
   const { data: pipeline } = await supabase
     .from("pipelines")
@@ -71,6 +71,7 @@ export default async function PipelinePage() {
         contacts={contacts ?? []}
         companies={companies ?? []}
         members={members}
+        currentUserId={profile.id}
       />
     </div>
   );

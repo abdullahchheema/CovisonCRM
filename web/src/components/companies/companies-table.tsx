@@ -17,31 +17,48 @@ interface CompanyRow {
 interface CompaniesTableProps {
   companies: CompanyRow[];
   ownerNameById: Record<string, string>;
+  currentUserId: string;
 }
 
-export function CompaniesTable({ companies, ownerNameById }: CompaniesTableProps) {
+export function CompaniesTable({
+  companies,
+  ownerNameById,
+  currentUserId,
+}: CompaniesTableProps) {
   const [search, setSearch] = useState("");
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    if (!term) return companies;
-    return companies.filter(
-      (company) =>
+    return companies.filter((company) => {
+      if (onlyMine && company.owner_id !== currentUserId) return false;
+      if (!term) return true;
+      return (
         company.name.toLowerCase().includes(term) ||
         (company.domain ?? "").toLowerCase().includes(term) ||
-        (company.industry ?? "").toLowerCase().includes(term),
-    );
-  }, [companies, search]);
+        (company.industry ?? "").toLowerCase().includes(term)
+      );
+    });
+  }, [companies, search, onlyMine, currentUserId]);
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex gap-2">
         <Input
           placeholder="Search by name, domain, or industry..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={onlyMine}
+            onChange={(e) => setOnlyMine(e.target.checked)}
+            className="size-4"
+          />
+          Only mine
+        </label>
       </div>
 
       {filtered.length === 0 ? (

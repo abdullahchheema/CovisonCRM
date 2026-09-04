@@ -29,15 +29,23 @@ interface ContactsTableProps {
   contacts: ContactRow[];
   companyNameById: Record<string, string>;
   ownerNameById: Record<string, string>;
+  currentUserId: string;
 }
 
-export function ContactsTable({ contacts, companyNameById, ownerNameById }: ContactsTableProps) {
+export function ContactsTable({
+  contacts,
+  companyNameById,
+  ownerNameById,
+  currentUserId,
+}: ContactsTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [onlyMine, setOnlyMine] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return contacts.filter((contact) => {
+      if (onlyMine && contact.owner_id !== currentUserId) return false;
       if (status && contact.status !== status) return false;
       if (!term) return true;
       return (
@@ -46,7 +54,7 @@ export function ContactsTable({ contacts, companyNameById, ownerNameById }: Cont
         (contact.job_title ?? "").toLowerCase().includes(term)
       );
     });
-  }, [contacts, search, status]);
+  }, [contacts, search, status, onlyMine, currentUserId]);
 
   return (
     <div>
@@ -69,6 +77,15 @@ export function ContactsTable({ contacts, companyNameById, ownerNameById }: Cont
             </option>
           ))}
         </Select>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={onlyMine}
+            onChange={(e) => setOnlyMine(e.target.checked)}
+            className="size-4"
+          />
+          Only mine
+        </label>
       </div>
 
       {filtered.length === 0 ? (

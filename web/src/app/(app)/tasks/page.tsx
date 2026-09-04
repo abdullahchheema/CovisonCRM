@@ -1,17 +1,27 @@
+import Link from "next/link";
+
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import { TaskRow } from "@/components/tasks/task-row";
 
-export default async function TasksPage() {
+export default async function TasksPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ mine?: string }>;
+}) {
   const { supabase, org, profile } = await requireOrgContext();
+  const { mine } = await searchParams;
+  const onlyMine = mine === "1";
+
+  const tasksQuery = supabase
+    .from("tasks")
+    .select("id, title, status, priority, due_at, contact_id, assigned_to")
+    .is("deleted_at", null)
+    .order("due_at", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: false });
 
   const [{ data: tasks, error }, { data: contacts }] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("id, title, status, priority, due_at, contact_id")
-      .is("deleted_at", null)
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false }),
+    onlyMine ? tasksQuery.eq("assigned_to", profile.id) : tasksQuery,
     supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
   ]);
 
@@ -28,6 +38,15 @@ export default async function TasksPage() {
           assignedTo={profile.id}
           contacts={contacts ?? []}
         />
+      </div>
+
+      <div className="mb-4">
+        <Link
+          href={onlyMine ? "/tasks" : "/tasks?mine=1"}
+          className="text-sm text-muted-foreground hover:text-foreground hover:underline"
+        >
+          {onlyMine ? "Show all tasks" : "Show only mine"}
+        </Link>
       </div>
 
       {error && <p className="text-sm text-danger">{error.message}</p>}

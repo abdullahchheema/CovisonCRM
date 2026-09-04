@@ -4,7 +4,7 @@ import { ContactsTable } from "@/components/contacts/contacts-table";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function ContactsPage() {
-  const { supabase, org } = await requireOrgContext();
+  const { supabase, org, profile } = await requireOrgContext();
 
   const [{ data: contacts, error }, { data: companies }, members] = await Promise.all([
     supabase
@@ -39,6 +39,7 @@ export default async function ContactsPage() {
           contacts={contacts ?? []}
           companyNameById={companyNameById}
           ownerNameById={ownerNameById}
+          currentUserId={profile.id}
         />
       )}
     </div>

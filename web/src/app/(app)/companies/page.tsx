@@ -4,7 +4,7 @@ import { CompaniesTable } from "@/components/companies/companies-table";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function CompaniesPage() {
-  const { supabase, org } = await requireOrgContext();
+  const { supabase, org, profile } = await requireOrgContext();
 
   const [{ data: companies, error }, members] = await Promise.all([
     supabase
@@ -27,7 +27,11 @@ export default async function CompaniesPage() {
       {error && <p className="text-sm text-danger">{error.message}</p>}
 
       {!error && (
-        <CompaniesTable companies={companies ?? []} ownerNameById={ownerNameById} />
+        <CompaniesTable
+          companies={companies ?? []}
+          ownerNameById={ownerNameById}
+          currentUserId={profile.id}
+        />
       )}
     </div>
   );
