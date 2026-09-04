@@ -1,5 +1,6 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { LogoutButton } from "@/components/logout-button";
+import { CommandPalette } from "@/components/command-palette";
 import Link from "next/link";
 
 const NAV_ITEMS = [
@@ -38,10 +39,13 @@ export default async function AppLayout({
       </aside>
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border px-6 py-4">
-          <span className="text-sm text-muted-foreground">
-            {profile.email}
-          </span>
-          <LogoutButton />
+          <CommandPalette />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-muted-foreground">
+              {profile.email}
+            </span>
+            <LogoutButton />
+          </div>
         </header>
         <main className="flex-1 p-6">{children}</main>
       </div>
