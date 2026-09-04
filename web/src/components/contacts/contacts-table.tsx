@@ -54,6 +54,7 @@ interface ContactsTableProps {
   currentUserId: string;
   organizationId: string;
   tags: Tag[];
+  tagsByContactId: Record<string, Tag[]>;
 }
 
 export function ContactsTable({
@@ -63,6 +64,7 @@ export function ContactsTable({
   currentUserId,
   organizationId,
   tags,
+  tagsByContactId,
 }: ContactsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -322,6 +324,7 @@ export function ContactsTable({
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Job title</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Tags</th>
                 <th className="px-4 py-3 font-medium">Owner</th>
               </tr>
             </thead>
@@ -357,6 +360,18 @@ export function ContactsTable({
                     <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
                       {STATUS_LABELS[contact.status] ?? contact.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-1">
+                      {(tagsByContactId[contact.id] ?? []).map((tag) => (
+                        <span
+                          key={tag.id}
+                          className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground"
+                        >
+                          {tag.name}
+                        </span>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—"}

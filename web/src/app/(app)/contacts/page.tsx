@@ -30,6 +30,23 @@ export default async function ContactsPage() {
     (companies ?? []).map((company) => [company.id, company.name]),
   );
   const ownerNameById = Object.fromEntries(members.map((m) => [m.id, m.name]));
+  const tagById = new Map((tags ?? []).map((tag) => [tag.id, tag]));
+
+  const contactIds = (contacts ?? []).map((c) => c.id);
+  const { data: contactTagRows } =
+    contactIds.length > 0
+      ? await supabase
+          .from("contact_tags")
+          .select("contact_id, tag_id")
+          .in("contact_id", contactIds)
+      : { data: [] as { contact_id: string; tag_id: string }[] };
+
+  const tagsByContactId: Record<string, { id: string; name: string; color: string }[]> = {};
+  for (const row of contactTagRows ?? []) {
+    const tag = tagById.get(row.tag_id);
+    if (!tag) continue;
+    (tagsByContactId[row.contact_id] ??= []).push(tag);
+  }
 
   return (
     <div>
@@ -48,6 +65,7 @@ export default async function ContactsPage() {
           currentUserId={profile.id}
           organizationId={org.id}
           tags={tags ?? []}
+          tagsByContactId={tagsByContactId}
         />
       )}
     </div>
