@@ -2,20 +2,18 @@ package models
 
 import (
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type Deal struct {
-	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	Title         string             `bson:"title" json:"title"`
-	ContactID     string             `bson:"contactId,omitempty" json:"contactId,omitempty"`
-	ContactName   string             `bson:"contactName,omitempty" json:"contactName,omitempty"`
-	Value         float64            `bson:"value" json:"value"`
-	Currency      string             `bson:"currency" json:"currency"`
-	Stage         string             `bson:"stage" json:"stage"`
-	AssignedTo    string             `bson:"assignedTo,omitempty" json:"assignedTo,omitempty"`
-	ExpectedClose *time.Time         `bson:"expectedClose,omitempty" json:"expectedClose,omitempty"`
-	CreatedAt     time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt     time.Time          `bson:"updatedAt" json:"updatedAt"`
+	ID            string     `gorm:"column:id;primaryKey;type:char(36)" json:"_id"`
+	Title         string     `gorm:"column:title" json:"title"`
+	ContactID     string     `gorm:"column:contactId" json:"contactId,omitempty"`
+	ContactName   string     `gorm:"column:contactName" json:"contactName,omitempty"`
+	Value         float64    `gorm:"column:value" json:"value"`
+	Currency      string     `gorm:"column:currency" json:"currency"`
+	Stage         string     `gorm:"column:stage" json:"stage"`
+	AssignedTo    string     `gorm:"column:assignedTo" json:"assignedTo,omitempty"`
+	ExpectedClose *time.Time `gorm:"column:expectedClose" json:"expectedClose,omitempty"`
+	CreatedAt     time.Time  `gorm:"column:createdAt" json:"createdAt"`
+	UpdatedAt     time.Time  `gorm:"column:updatedAt" json:"updatedAt"`
 }

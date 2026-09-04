@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -10,26 +9,13 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 func GetEmailTemplates(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.M{"createdAt": -1})
-	cursor, err := db.Collection("email_templates").Find(ctx, bson.M{}, opts)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to fetch email templates", err)
-		return
-	}
-	defer cursor.Close(ctx)
-
 	templates := make([]models.EmailTemplate, 0)
-	if err = cursor.All(ctx, &templates); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode email templates", err)
+	if err := db.DB.Order("createdAt DESC").Find(&templates).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch email templates", err)
 		return
 	}
 
@@ -37,17 +23,14 @@ func GetEmailTemplates(c *gin.Context) {
 }
 
 func GetEmailTemplate(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid template ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var tmpl models.EmailTemplate
-	if err = db.Collection("email_templates").FindOne(ctx, bson.M{"_id": id}).Decode(&tmpl); err != nil {
+	if err := db.DB.Where("id = ?", id).First(&tmpl).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "Email template not found", err)
 		return
 	}
@@ -62,14 +45,11 @@ func CreateEmailTemplate(c *gin.Context) {
 		return
 	}
 
-	tmpl.ID = primitive.NewObjectID()
+	tmpl.ID = models.NewUUID()
 	tmpl.CreatedAt = time.Now()
 	tmpl.UpdatedAt = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("email_templates").InsertOne(ctx, tmpl); err != nil {
+	if err := db.DB.Create(&tmpl).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create email template", err)
 		return
 	}
@@ -78,8 +58,8 @@ func CreateEmailTemplate(c *gin.Context) {
 }
 
 func UpdateEmailTemplate(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid template ID", err)
 		return
 	}
@@ -92,7 +72,7 @@ func UpdateEmailTemplate(c *gin.Context) {
 
 	body.UpdatedAt = time.Now()
 
-	update := bson.M{"$set": bson.M{
+	result := db.DB.Model(&models.EmailTemplate{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"name":       body.Name,
 		"subject":    body.Subject,
 		"body":       body.Body,
@@ -104,17 +84,12 @@ func UpdateEmailTemplate(c *gin.Context) {
 		"dayOfMonth": body.DayOfMonth,
 		"status":     body.Status,
 		"updatedAt":  body.UpdatedAt,
-	}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("email_templates").UpdateOne(ctx, bson.M{"_id": id}, update)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update email template", err)
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update email template", result.Error)
 		return
 	}
-	if result.MatchedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Email template not found")
 		return
 	}
@@ -124,21 +99,18 @@ func UpdateEmailTemplate(c *gin.Context) {
 }
 
 func DeleteEmailTemplate(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid template ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("email_templates").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to delete email template", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.EmailTemplate{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete email template", result.Error)
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Email template not found")
 		return
 	}

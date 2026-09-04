@@ -4,6 +4,10 @@ services:
       context: ./backend
     image: ${IMAGE_REPO:-tinycrm}/backend:${IMAGE_TAG:-latest}
     restart: unless-stopped
+    # DB_CONNECT in backend/.env points at a local MySQL server. If MySQL runs
+    # directly on your PC (not in this compose file) and this backend container
+    # also runs via Docker, use host.docker.internal instead of 127.0.0.1 in the
+    # DSN so the container can reach the host machine's MySQL.
     env_file:
       - ./backend/.env
     volumes:

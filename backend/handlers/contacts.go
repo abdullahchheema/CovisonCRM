@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,29 +11,27 @@ import (
 
 	"tinycrm/db"
 	"tinycrm/models"
+	"tinycrm/services"
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // logActivity inserts a system-generated activity note and bumps the contact's lastActivity.
-func logActivity(ctx context.Context, contactID primitive.ObjectID, author, body string) {
+func logActivity(contactID, author, body string) {
 	note := models.Note{
-		ID:        primitive.NewObjectID(),
+		ID:        models.NewUUID(),
 		ContactID: contactID,
 		Type:      models.NoteTypeActivity,
 		Body:      body,
 		Author:    author,
 		CreatedAt: time.Now(),
 	}
-	db.Collection("contact_notes").InsertOne(ctx, note)
-	db.Collection("contacts").UpdateOne(ctx,
-		bson.M{"_id": contactID},
-		bson.M{"$set": bson.M{"lastActivity": note.CreatedAt}},
-	)
+	db.DB.Create(&note)
+	db.DB.Model(&models.Contact{}).Where("id = ?", contactID).Update("lastActivity", note.CreatedAt)
 }
 
 func getAuthorName(c *gin.Context) string {
@@ -48,105 +46,123 @@ func getAuthorName(c *gin.Context) string {
 func GetContacts(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	search           := strings.TrimSpace(c.Query("search"))
-	filterName       := strings.TrimSpace(c.Query("name"))
-	filterEmail      := strings.TrimSpace(c.Query("email"))
-	filterPhone      := strings.TrimSpace(c.Query("phone"))
-	status           := strings.TrimSpace(c.Query("status"))
-	priority         := strings.TrimSpace(c.Query("priority"))
-	company          := strings.TrimSpace(c.Query("company"))
-	contactOwner     := strings.TrimSpace(c.Query("contactOwner"))
+	search := strings.TrimSpace(c.Query("search"))
+	filterName := strings.TrimSpace(c.Query("name"))
+	filterEmail := strings.TrimSpace(c.Query("email"))
+	filterPhone := strings.TrimSpace(c.Query("phone"))
+	status := strings.TrimSpace(c.Query("status"))
+	priority := strings.TrimSpace(c.Query("priority"))
+	company := strings.TrimSpace(c.Query("company"))
+	contactOwner := strings.TrimSpace(c.Query("contactOwner"))
 	lastActivityFrom := strings.TrimSpace(c.Query("lastActivityFrom"))
-	lastActivityTo   := strings.TrimSpace(c.Query("lastActivityTo"))
-	dateFrom         := strings.TrimSpace(c.Query("dateFrom"))
-	dateTo           := strings.TrimSpace(c.Query("dateTo"))
+	lastActivityTo := strings.TrimSpace(c.Query("lastActivityTo"))
+	dateFrom := strings.TrimSpace(c.Query("dateFrom"))
+	dateTo := strings.TrimSpace(c.Query("dateTo"))
+	tagIDs := splitCSV(c.Query("tagIds"))
+	tagMatch := strings.TrimSpace(c.Query("tagMatch")) // "any" (default) | "all"
+	excludeTagIDs := splitCSV(c.Query("excludeTagIds"))
 
 	if page < 1 {
 		page = 1
 	}
-	if limit < 1 || limit > 200 {
+	if limit < 1 {
 		limit = 50
 	}
+	if limit > 10000 {
+		limit = 10000
+	}
 
-	filter := bson.M{}
+	query := db.DB.Model(&models.Contact{})
+
 	if search != "" {
-		filter["$or"] = bson.A{
-			bson.M{"name":    bson.M{"$regex": search, "$options": "i"}},
-			bson.M{"mail":    bson.M{"$regex": search, "$options": "i"}},
-			bson.M{"number":  bson.M{"$regex": search, "$options": "i"}},
-			bson.M{"company": bson.M{"$regex": search, "$options": "i"}},
-		}
+		like := "%" + search + "%"
+		query = query.Where(
+			"name LIKE ? OR mail LIKE ? OR number LIKE ? OR company LIKE ?",
+			like, like, like, like,
+		)
 	}
 	if filterName != "" {
-		filter["name"] = bson.M{"$regex": filterName, "$options": "i"}
+		query = query.Where("name LIKE ?", "%"+filterName+"%")
 	}
 	if filterEmail != "" {
-		filter["mail"] = bson.M{"$regex": filterEmail, "$options": "i"}
+		query = query.Where("mail LIKE ?", "%"+filterEmail+"%")
 	}
 	if filterPhone != "" {
-		filter["number"] = bson.M{"$regex": filterPhone, "$options": "i"}
+		query = query.Where("number LIKE ?", "%"+filterPhone+"%")
 	}
 	if status != "" {
-		filter["status"] = status
+		query = query.Where("status = ?", status)
 	}
 	if priority != "" {
-		filter["priority"] = priority
+		query = query.Where("priority = ?", priority)
 	}
 	if company != "" {
-		filter["company"] = bson.M{"$regex": company, "$options": "i"}
+		query = query.Where("company LIKE ?", "%"+company+"%")
 	}
 	if contactOwner != "" {
-		filter["contactOwner"] = bson.M{"$regex": contactOwner, "$options": "i"}
+		query = query.Where("contactOwner LIKE ?", "%"+contactOwner+"%")
 	}
-	if lastActivityFrom != "" || lastActivityTo != "" {
-		r := bson.M{}
-		if lastActivityFrom != "" {
-			if t, err := time.Parse("2006-01-02", lastActivityFrom); err == nil {
-				r["$gte"] = t
-			}
+	if lastActivityFrom != "" {
+		if t, err := time.Parse("2006-01-02", lastActivityFrom); err == nil {
+			query = query.Where("lastActivity >= ?", t)
 		}
-		if lastActivityTo != "" {
-			if t, err := time.Parse("2006-01-02", lastActivityTo); err == nil {
-				r["$lte"] = t.Add(24*time.Hour - time.Second)
-			}
-		}
-		filter["lastActivity"] = r
 	}
-	if dateFrom != "" || dateTo != "" {
-		r := bson.M{}
-		if dateFrom != "" {
-			if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
-				r["$gte"] = t
-			}
+	if lastActivityTo != "" {
+		if t, err := time.Parse("2006-01-02", lastActivityTo); err == nil {
+			query = query.Where("lastActivity <= ?", t.Add(24*time.Hour-time.Second))
 		}
-		if dateTo != "" {
-			if t, err := time.Parse("2006-01-02", dateTo); err == nil {
-				r["$lte"] = t.Add(24*time.Hour - time.Second)
-			}
+	}
+	if dateFrom != "" {
+		if t, err := time.Parse("2006-01-02", dateFrom); err == nil {
+			query = query.Where("date >= ?", t)
 		}
-		filter["date"] = r
+	}
+	if dateTo != "" {
+		if t, err := time.Parse("2006-01-02", dateTo); err == nil {
+			query = query.Where("date <= ?", t.Add(24*time.Hour-time.Second))
+		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	if len(tagIDs) > 0 {
+		matchedIDs, err := services.ContactIDsForTags(tagIDs, tagMatch)
+		if err != nil {
+			utils.Err(c, http.StatusInternalServerError, "Failed to filter by tags", err)
+			return
+		}
+		if len(matchedIDs) == 0 {
+			c.JSON(http.StatusOK, gin.H{"data": []models.Contact{}, "total": 0, "page": page, "limit": limit})
+			return
+		}
+		query = query.Where("id IN ?", matchedIDs)
+	}
+	if len(excludeTagIDs) > 0 {
+		excludedIDs, err := services.ContactIDsForTags(excludeTagIDs, "any")
+		if err != nil {
+			utils.Err(c, http.StatusInternalServerError, "Failed to filter by tags", err)
+			return
+		}
+		if len(excludedIDs) > 0 {
+			query = query.Where("id NOT IN ?", excludedIDs)
+		}
+	}
 
-	total, _ := db.Collection("contacts").CountDocuments(ctx, filter)
-
-	opts := options.Find().
-		SetSkip(int64((page - 1) * limit)).
-		SetLimit(int64(limit)).
-		SetSort(bson.D{{Key: "date", Value: -1}})
-
-	cursor, err := db.Collection("contacts").Find(ctx, filter, opts)
-	if err != nil {
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to fetch contacts", err)
 		return
 	}
-	defer cursor.Close(ctx)
 
 	contacts := make([]models.Contact, 0)
-	if err = cursor.All(ctx, &contacts); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode contacts", err)
+	if err := query.Order("date DESC").
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Find(&contacts).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch contacts", err)
+		return
+	}
+
+	if err := services.AttachTags(contacts); err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch tags", err)
 		return
 	}
 
@@ -158,6 +174,21 @@ func GetContacts(c *gin.Context) {
 	})
 }
 
+// splitCSV parses a comma-separated query param into a trimmed, non-empty slice.
+func splitCSV(s string) []string {
+	if s == "" {
+		return nil
+	}
+	parts := strings.Split(s, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if v := strings.TrimSpace(p); v != "" {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
 func CreateContact(c *gin.Context) {
 	var contact models.Contact
 	if err := c.ShouldBindJSON(&contact); err != nil {
@@ -165,50 +196,49 @@ func CreateContact(c *gin.Context) {
 		return
 	}
 
-	contact.ID = primitive.NewObjectID()
+	contact.ID = models.NewUUID()
 	contact.CreatedAt = time.Now()
 	contact.LastActivity = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	if contact.Email != "" {
-		count, _ := db.Collection("contacts").CountDocuments(ctx, bson.M{"mail": contact.Email})
+		var count int64
+		db.DB.Model(&models.Contact{}).Where("mail = ?", contact.Email).Count(&count)
 		if count > 0 {
 			utils.Err(c, http.StatusConflict, "A contact with this email already exists")
 			return
 		}
 	}
 
-	if _, err := db.Collection("contacts").InsertOne(ctx, contact); err != nil {
+	if err := db.DB.Create(&contact).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create contact", err)
 		return
 	}
 
-	logActivity(ctx, contact.ID, getAuthorName(c), "Contact created")
+	if len(contact.TagIDs) > 0 {
+		if err := services.SyncContactTags(contact.ID, contact.TagIDs); err != nil {
+			utils.Err(c, http.StatusInternalServerError, "Failed to assign tags", err)
+			return
+		}
+	}
 
-	c.JSON(http.StatusCreated, contact)
+	logActivity(contact.ID, getAuthorName(c), "Contact created")
+
+	contacts := []models.Contact{contact}
+	services.AttachTags(contacts) //nolint
+
+	c.JSON(http.StatusCreated, contacts[0])
 }
 
 var csvHeaders = []string{
 	"name", "email", "number", "company", "jobTitle",
 	"priority", "companySize", "probability", "status",
+	"linkedinUrl", "website", "country", "city", "niche",
 }
 
 func ExportContacts(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := db.Collection("contacts").Find(ctx, bson.M{})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to fetch contacts", err)
-		return
-	}
-	defer cursor.Close(ctx)
-
 	contacts := make([]models.Contact, 0)
-	if err = cursor.All(ctx, &contacts); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode contacts", err)
+	if err := db.DB.Find(&contacts).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch contacts", err)
 		return
 	}
 
@@ -229,6 +259,11 @@ func ExportContacts(c *gin.Context) {
 			strconv.Itoa(ct.CompanySize),
 			ct.Probability,
 			ct.Status,
+			ct.LinkedinURL,
+			ct.Website,
+			ct.Country,
+			ct.City,
+			ct.Niche,
 		})
 	}
 
@@ -263,12 +298,18 @@ func ImportContacts(c *gin.Context) {
 		idx[strings.ToLower(strings.TrimSpace(h))] = i
 	}
 
-	col := func(row []string, key string) string {
-		i, ok := idx[key]
-		if !ok || i >= len(row) {
-			return ""
+	// col looks up a value by any of the given header keys (case-insensitive),
+	// returning the first one found. Multiple keys let us recognize the same
+	// field under different names from different lead-scraping tools.
+	col := func(row []string, keys ...string) string {
+		for _, key := range keys {
+			if i, ok := idx[key]; ok && i < len(row) {
+				if v := strings.TrimSpace(row[i]); v != "" {
+					return v
+				}
+			}
 		}
-		return strings.TrimSpace(row[i])
+		return ""
 	}
 
 	// Collect non-empty emails from the CSV for duplicate checking
@@ -279,28 +320,23 @@ func ImportContacts(c *gin.Context) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-
-	// Fetch which of those emails already exist in one query
+	// Fetch which of those emails already exist in one query. Comparisons are
+	// case-insensitive so "Jane@x.com" and "jane@x.com" are treated as the same.
 	existingEmails := make(map[string]bool)
 	if len(csvEmails) > 0 {
-		type emailDoc struct {
-			Email string `bson:"mail"`
-		}
-		cur, err := db.Collection("contacts").Find(ctx, bson.M{"mail": bson.M{"$in": csvEmails}},
-			options.Find().SetProjection(bson.M{"mail": 1}))
-		if err == nil {
-			var existing []emailDoc
-			cur.All(ctx, &existing) //nolint
+		var existing []models.Contact
+		if err := db.DB.Select("mail").Where("mail IN ?", csvEmails).Find(&existing).Error; err == nil {
 			for _, e := range existing {
-				existingEmails[e.Email] = true
+				existingEmails[strings.ToLower(e.Email)] = true
 			}
 		}
 	}
 
-	var docs []any
+	var docs []models.Contact
 	var skipped []string
+	// Tracks emails already accepted earlier in this same CSV, so duplicate
+	// rows within one file are caught too, not just duplicates against the DB.
+	seenInFile := make(map[string]bool)
 
 	for rowNum, row := range rows[1:] {
 		name := col(row, "name")
@@ -310,26 +346,50 @@ func ImportContacts(c *gin.Context) {
 		}
 
 		email := col(row, "email")
-		if email != "" && existingEmails[email] {
+		emailKey := strings.ToLower(email)
+		if email != "" && (existingEmails[emailKey] || seenInFile[emailKey]) {
 			skipped = append(skipped, fmt.Sprintf("row %d: duplicate email %s", rowNum+2, email))
 			continue
+		}
+		if email != "" {
+			seenInFile[emailKey] = true
 		}
 
 		size, _ := strconv.Atoi(col(row, "companysize"))
 
+		// Default these when the CSV doesn't include them, matching the
+		// Add Contact form's defaults, instead of leaving them blank.
+		priority := col(row, "priority")
+		if priority == "" {
+			priority = "low"
+		}
+		probability := col(row, "probability")
+		if probability == "" {
+			probability = "0.5"
+		}
+		status := col(row, "status")
+		if status == "" {
+			status = "new"
+		}
+
 		contact := models.Contact{
-			ID:           primitive.NewObjectID(),
+			ID:           models.NewUUID(),
 			Name:         name,
 			Email:        email,
 			Number:       col(row, "number"),
 			Company:      col(row, "company"),
 			JobTitle:     col(row, "jobtitle"),
-			Priority:     col(row, "priority"),
+			Priority:     priority,
 			CompanySize:  size,
-			Probability:  col(row, "probability"),
-			Status:       col(row, "status"),
+			Probability:  probability,
+			Status:       status,
 			LastActivity: time.Now(),
 			CreatedAt:    time.Now(),
+			LinkedinURL:  col(row, "linkedinurl", "prospect_linkedin", "linkedin"),
+			Website:      col(row, "website", "business_website"),
+			Country:      col(row, "country", "business_country_name"),
+			City:         col(row, "city", "business_region", "region"),
+			Niche:        col(row, "niche", "business_naics_description", "industry"),
 		}
 		docs = append(docs, contact)
 	}
@@ -339,26 +399,55 @@ func ImportContacts(c *gin.Context) {
 		return
 	}
 
-	res, err := db.Collection("contacts").InsertMany(ctx, docs)
-	if err != nil {
+	if err := db.DB.Create(&docs).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to import contacts", err)
 		return
 	}
 
+	// Assign Tags (optional step): apply the chosen tags to every imported
+	// contact, and/or auto-create+apply a tag per distinct niche value.
+	tagIDs := splitCSV(c.PostForm("tagIds"))
+	autoTagNiche := c.PostForm("autoTagNiche") == "true"
+
+	nicheTagCache := make(map[string]string) // niche (lowercased) -> tagID
+	tagRows := make([]models.ContactTag, 0, len(docs)*(len(tagIDs)+1))
+	for _, doc := range docs {
+		for _, tagID := range tagIDs {
+			tagRows = append(tagRows, models.ContactTag{ContactID: doc.ID, TagID: tagID})
+		}
+		if autoTagNiche && doc.Niche != "" {
+			key := strings.ToLower(doc.Niche)
+			tagID, ok := nicheTagCache[key]
+			if !ok {
+				tag, err := GetOrCreateTagByName(doc.Niche)
+				if err == nil {
+					tagID = tag.ID
+					nicheTagCache[key] = tagID
+				}
+			}
+			if tagID != "" {
+				tagRows = append(tagRows, models.ContactTag{ContactID: doc.ID, TagID: tagID})
+			}
+		}
+	}
+	if len(tagRows) > 0 {
+		db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&tagRows) //nolint
+	}
+
 	c.JSON(http.StatusCreated, gin.H{
-		"imported": len(res.InsertedIDs),
+		"imported": len(docs),
 		"skipped":  skipped,
 	})
 }
 
 func UpdateContact(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid contact ID", err)
 		return
 	}
 
-	var body bson.M
+	var body map[string]interface{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Err(c, http.StatusBadRequest, err.Error())
 		return
@@ -366,12 +455,45 @@ func UpdateContact(c *gin.Context) {
 	delete(body, "_id")
 	body["lastActivity"] = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// "tagIds" is not a real column — it's resolved through the contact_tags
+	// join table — so pull it out before the raw-map Updates() and sync it
+	// separately.
+	var tagIDs []string
+	var syncTags bool
+	if rawTagIDs, ok := body["tagIds"]; ok {
+		syncTags = true
+		delete(body, "tagIds")
+		if arr, ok := rawTagIDs.([]interface{}); ok {
+			for _, v := range arr {
+				if s, ok := v.(string); ok {
+					tagIDs = append(tagIDs, s)
+				}
+			}
+		}
+	}
+	delete(body, "tags")
+
+	// The JSON key "email" maps to the "mail" column (carried over from the
+	// original bson tag); raw map updates use the key as-is, so translate it.
+	if email, ok := body["email"]; ok {
+		delete(body, "email")
+		body["mail"] = email
+	}
+
+	// "assignee" is a JSON-serialized column; raw map updates bypass the
+	// model's field serializer, so marshal it to JSON ourselves.
+	if assignee, ok := body["assignee"]; ok {
+		raw, err := json.Marshal(assignee)
+		if err != nil {
+			utils.Err(c, http.StatusBadRequest, "Invalid assignee", err)
+			return
+		}
+		body["assignee"] = string(raw)
+	}
 
 	// Fetch existing contact before update so we can diff fields.
 	var existing models.Contact
-	db.Collection("contacts").FindOne(ctx, bson.M{"_id": id}).Decode(&existing)
+	db.DB.Where("id = ?", id).First(&existing)
 
 	author := getAuthorName(c)
 
@@ -385,64 +507,169 @@ func UpdateContact(c *gin.Context) {
 	}
 
 	if s, ok := strField("status"); ok && s != "" && s != existing.Status {
-		logActivity(ctx, id, author, fmt.Sprintf("Status changed from %s to %s", existing.Status, s))
+		logActivity(id, author, fmt.Sprintf("Status changed from %s to %s", existing.Status, s))
 	}
 	if p, ok := strField("priority"); ok && p != "" && p != existing.Priority {
-		logActivity(ctx, id, author, fmt.Sprintf("Priority changed from %s to %s", existing.Priority, p))
+		logActivity(id, author, fmt.Sprintf("Priority changed from %s to %s", existing.Priority, p))
 	}
 	if n, ok := strField("name"); ok && n != "" && n != existing.Name {
-		logActivity(ctx, id, author, fmt.Sprintf("Name updated to %s", n))
+		logActivity(id, author, fmt.Sprintf("Name updated to %s", n))
 	}
 	if co, ok := strField("company"); ok && co != "" && co != existing.Company {
-		logActivity(ctx, id, author, fmt.Sprintf("Company updated to %s", co))
+		logActivity(id, author, fmt.Sprintf("Company updated to %s", co))
 	}
 	if jt, ok := strField("jobTitle"); ok && jt != "" && jt != existing.JobTitle {
-		logActivity(ctx, id, author, fmt.Sprintf("Job title updated to %s", jt))
+		logActivity(id, author, fmt.Sprintf("Job title updated to %s", jt))
 	}
 	if a, ok := strField("contactOwner"); ok && a != existing.ContactOwner {
 		if existing.ContactOwner == "" {
-			logActivity(ctx, id, author, fmt.Sprintf("Assigned to %s", a))
+			logActivity(id, author, fmt.Sprintf("Assigned to %s", a))
 		} else if a == "" {
-			logActivity(ctx, id, author, fmt.Sprintf("Unassigned from %s", existing.ContactOwner))
+			logActivity(id, author, fmt.Sprintf("Unassigned from %s", existing.ContactOwner))
 		} else {
-			logActivity(ctx, id, author, fmt.Sprintf("Reassigned from %s to %s", existing.ContactOwner, a))
+			logActivity(id, author, fmt.Sprintf("Reassigned from %s to %s", existing.ContactOwner, a))
 		}
 	}
 
-	after := options.After
 	var updated models.Contact
-	err = db.Collection("contacts").FindOneAndUpdate(
-		ctx,
-		bson.M{"_id": id},
-		bson.M{"$set": body},
-		&options.FindOneAndUpdateOptions{ReturnDocument: &after},
-	).Decode(&updated)
-	if err != nil {
-		utils.Err(c, http.StatusNotFound, "Contact not found", err)
+	if len(body) > 0 {
+		if err := db.DB.Model(&models.Contact{}).Where("id = ?", id).Updates(body).Error; err != nil {
+			utils.Err(c, http.StatusInternalServerError, "Failed to update contact", err)
+			return
+		}
+	}
+	if syncTags {
+		if err := services.SyncContactTags(id, tagIDs); err != nil {
+			utils.Err(c, http.StatusInternalServerError, "Failed to update tags", err)
+			return
+		}
+	}
+	if err := db.DB.Where("id = ?", id).First(&updated).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			utils.Err(c, http.StatusNotFound, "Contact not found", err)
+			return
+		}
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch updated contact", err)
 		return
 	}
 
-	c.JSON(http.StatusOK, updated)
+	contacts := []models.Contact{updated}
+	services.AttachTags(contacts) //nolint
+
+	c.JSON(http.StatusOK, contacts[0])
+}
+
+// POST /api/contacts/bulk-tag
+// Body: { "ids": ["..."], "tagIds": ["..."], "action": "add" | "remove" | "replace" }
+func BulkTagContacts(c *gin.Context) {
+	var body struct {
+		IDs    []string `json:"ids"`
+		TagIDs []string `json:"tagIds"`
+		Action string   `json:"action"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 {
+		utils.Err(c, http.StatusBadRequest, "ids is required")
+		return
+	}
+	if body.Action != "add" && body.Action != "remove" && body.Action != "replace" {
+		utils.Err(c, http.StatusBadRequest, "action must be add, remove, or replace")
+		return
+	}
+
+	validIDs := make([]string, 0, len(body.IDs))
+	for _, id := range body.IDs {
+		if _, err := uuid.Parse(id); err == nil {
+			validIDs = append(validIDs, id)
+		}
+	}
+	if len(validIDs) == 0 {
+		utils.Err(c, http.StatusBadRequest, "No valid contact IDs provided")
+		return
+	}
+
+	switch body.Action {
+	case "replace":
+		for _, id := range validIDs {
+			if err := services.SyncContactTags(id, body.TagIDs); err != nil {
+				utils.Err(c, http.StatusInternalServerError, "Failed to replace tags", err)
+				return
+			}
+		}
+	case "remove":
+		if len(body.TagIDs) > 0 {
+			if err := db.DB.Where("contactId IN ? AND tagId IN ?", validIDs, body.TagIDs).
+				Delete(&models.ContactTag{}).Error; err != nil {
+				utils.Err(c, http.StatusInternalServerError, "Failed to remove tags", err)
+				return
+			}
+		}
+	case "add":
+		rows := make([]models.ContactTag, 0, len(validIDs)*len(body.TagIDs))
+		for _, id := range validIDs {
+			for _, tagID := range body.TagIDs {
+				rows = append(rows, models.ContactTag{ContactID: id, TagID: tagID})
+			}
+		}
+		if len(rows) > 0 {
+			if err := db.DB.Clauses(clause.OnConflict{DoNothing: true}).Create(&rows).Error; err != nil {
+				utils.Err(c, http.StatusInternalServerError, "Failed to add tags", err)
+				return
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"updated": len(validIDs)})
 }
 
 func DeleteContact(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid contact ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("contacts").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil || result.DeletedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Contact not found", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.Contact{})
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Contact not found", result.Error)
 		return
 	}
 
 	// cascade — delete associated notes
-	db.Collection("contact_notes").DeleteMany(ctx, bson.M{"contactId": id})
+	db.DB.Where("contactId = ?", id).Delete(&models.Note{})
 
 	c.JSON(http.StatusOK, gin.H{"deleted": id})
+}
+
+// POST /api/contacts/bulk-delete
+// Body: { "ids": ["...", "..."] }
+func BulkDeleteContacts(c *gin.Context) {
+	var body struct {
+		IDs []string `json:"ids"`
+	}
+	if err := c.ShouldBindJSON(&body); err != nil || len(body.IDs) == 0 {
+		utils.Err(c, http.StatusBadRequest, "ids is required")
+		return
+	}
+
+	validIDs := make([]string, 0, len(body.IDs))
+	for _, id := range body.IDs {
+		if _, err := uuid.Parse(id); err == nil {
+			validIDs = append(validIDs, id)
+		}
+	}
+	if len(validIDs) == 0 {
+		utils.Err(c, http.StatusBadRequest, "No valid contact IDs provided")
+		return
+	}
+
+	// cascade — delete associated notes first
+	db.DB.Where("contactId IN ?", validIDs).Delete(&models.Note{})
+
+	result := db.DB.Where("id IN ?", validIDs).Delete(&models.Contact{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete contacts", result.Error)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"deleted": result.RowsAffected})
 }

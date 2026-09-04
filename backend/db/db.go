@@ -1,37 +1,49 @@
 package db
 
 import (
-	"context"
 	"log"
 	"os"
-	"time"
 
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"tinycrm/models"
+
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
-var Client *mongo.Client
-var database *mongo.Database
+var DB *gorm.DB
 
 func Connect() {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	dsn := os.Getenv("DB_CONNECT")
 
-	uri := os.Getenv("DB_CONNECT")
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	gdb, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Warn),
+	})
 	if err != nil {
-		log.Fatal("Failed to connect to MongoDB:", err)
+		log.Fatal("Failed to connect to MySQL:", err)
 	}
 
-	if err = client.Ping(ctx, nil); err != nil {
-		log.Fatal("Failed to ping MongoDB:", err)
+	if err := gdb.AutoMigrate(
+		&models.Company{},
+		&models.User{},
+		&models.Contact{},
+		&models.Tag{},
+		&models.ContactTag{},
+		&models.Note{},
+		&models.Deal{},
+		&models.Ticket{},
+		&models.Project{},
+		&models.Column{},
+		&models.Todo{},
+		&models.EmailTemplate{},
+		&models.EmailGroup{},
+		&models.EmailSend{},
+		&models.EmailSendSummary{},
+		&models.EmailSendJob{},
+	); err != nil {
+		log.Fatal("Failed to migrate database schema:", err)
 	}
 
-	Client = client
-	database = client.Database("easycrm")
-	log.Println("Connected to MongoDB")
-}
-
-func Collection(name string) *mongo.Collection {
-	return database.Collection(name)
+	DB = gdb
+	log.Println("Connected to MySQL")
 }

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -10,13 +9,12 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 )
 
 func CreateColumn(c *gin.Context) {
-	projectID, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	projectID := c.Param("id")
+	if _, err := uuid.Parse(projectID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid project ID", err)
 		return
 	}
@@ -29,21 +27,19 @@ func CreateColumn(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	// Count existing columns to set order
-	count, _ := db.Collection("columns").CountDocuments(ctx, bson.M{"projectId": projectID})
+	var count int64
+	db.DB.Model(&models.Column{}).Where("projectId = ?", projectID).Count(&count)
 
 	col := models.Column{
-		ID:        primitive.NewObjectID(),
+		ID:        models.NewUUID(),
 		ProjectID: projectID,
 		Name:      body.Name,
 		Order:     int(count),
 		CreatedAt: time.Now(),
 	}
 
-	if _, err := db.Collection("columns").InsertOne(ctx, col); err != nil {
+	if err := db.DB.Create(&col).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create column", err)
 		return
 	}
@@ -52,8 +48,8 @@ func CreateColumn(c *gin.Context) {
 }
 
 func UpdateColumn(c *gin.Context) {
-	colID, err := primitive.ObjectIDFromHex(c.Param("colId"))
-	if err != nil {
+	colID := c.Param("colId")
+	if _, err := uuid.Parse(colID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid column ID", err)
 		return
 	}
@@ -66,16 +62,9 @@ func UpdateColumn(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("columns").UpdateOne(
-		ctx,
-		bson.M{"_id": colID},
-		bson.M{"$set": bson.M{"name": body.Name}},
-	)
-	if err != nil || result.MatchedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Column not found", err)
+	result := db.DB.Model(&models.Column{}).Where("id = ?", colID).Update("name", body.Name)
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Column not found", result.Error)
 		return
 	}
 
@@ -83,8 +72,8 @@ func UpdateColumn(c *gin.Context) {
 }
 
 func ReorderColumns(c *gin.Context) {
-	projectID, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	projectID := c.Param("id")
+	if _, err := uuid.Parse(projectID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid project ID", err)
 		return
 	}
@@ -97,40 +86,31 @@ func ReorderColumns(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	for i, idHex := range body.ColumnIDs {
-		colID, err := primitive.ObjectIDFromHex(idHex)
-		if err != nil {
+	for i, colID := range body.ColumnIDs {
+		if _, err := uuid.Parse(colID); err != nil {
 			continue
 		}
-		db.Collection("columns").UpdateOne(
-			ctx,
-			bson.M{"_id": colID, "projectId": projectID},
-			bson.M{"$set": bson.M{"order": i}},
-		) //nolint
+		db.DB.Model(&models.Column{}).
+			Where("id = ? AND projectId = ?", colID, projectID).
+			Update("order", i) //nolint
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Columns reordered"})
 }
 
 func DeleteColumn(c *gin.Context) {
-	colID, err := primitive.ObjectIDFromHex(c.Param("colId"))
-	if err != nil {
+	colID := c.Param("colId")
+	if _, err := uuid.Parse(colID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid column ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	// Move todos in this column to the first column of the same project, or delete them
-	db.Collection("todos").DeleteMany(ctx, bson.M{"columnId": colID}) //nolint
+	db.DB.Where("columnId = ?", colID).Delete(&models.Todo{}) //nolint
 
-	result, err := db.Collection("columns").DeleteOne(ctx, bson.M{"_id": colID})
-	if err != nil || result.DeletedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Column not found", err)
+	result := db.DB.Where("id = ?", colID).Delete(&models.Column{})
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Column not found", result.Error)
 		return
 	}
 

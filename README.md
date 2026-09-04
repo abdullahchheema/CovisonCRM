@@ -38,7 +38,7 @@
 
 **Backend**
 - Go 1.21 + Gin
-- MongoDB via `mongo-driver`
+- MySQL via GORM
 - JWT authentication, AES-256-GCM encryption
 - SMTP email (gomail + Gmail) with background scheduler
 
@@ -58,10 +58,16 @@
 
 ## Getting Started
 
+Requires a local MySQL server. Create the database once before starting the backend:
+
+```bash
+mysql -u root -p -e "CREATE DATABASE tinycrm;"
+```
+
 ### Docker (recommended)
 
 ```bash
-cp backend/.env.example backend/.env   # fill in your credentials
+cp backend/.env.example backend/.env   # fill in your credentials, including your local MySQL password
 docker compose up --build
 ```
 
@@ -70,7 +76,7 @@ docker compose up --build
 ```bash
 # Backend
 cd backend
-cp .env.example .env   # fill in DB_CONNECT, EMAIL_ID, EMAIL_PWD, TOKEN_SECRET, CRYPTR_SECRET
+cp .env.example .env   # fill in DB_CONNECT (MySQL DSN), EMAIL_ID, EMAIL_PWD, TOKEN_SECRET, CRYPTR_SECRET
 go mod download
 go run main.go
 
@@ -93,7 +99,7 @@ CRM/
 │       └── services/      # Axios API client + per-resource model wrappers
 └── backend/               # Go REST API
     ├── handlers/          # Route handlers (one file per resource)
-    ├── models/            # MongoDB models
+    ├── models/            # GORM models (MySQL)
     ├── middleware/        # JWT auth, rate limiter
     ├── scheduler/         # Background email scheduler (fires templates on schedule)
     ├── templates/         # Transactional email HTML templates

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -10,31 +9,18 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 func GetDeals(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	filter := bson.M{}
+	query := db.DB.Model(&models.Deal{})
 	if contactID := c.Query("contactId"); contactID != "" {
-		filter["contactId"] = contactID
+		query = query.Where("contactId = ?", contactID)
 	}
-
-	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
-	cursor, err := db.Collection("deals").Find(ctx, filter, opts)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to fetch deals", err)
-		return
-	}
-	defer cursor.Close(ctx)
 
 	deals := make([]models.Deal, 0)
-	if err = cursor.All(ctx, &deals); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode deals", err)
+	if err := query.Order("createdAt DESC").Find(&deals).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch deals", err)
 		return
 	}
 
@@ -42,17 +28,14 @@ func GetDeals(c *gin.Context) {
 }
 
 func GetDeal(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid deal ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var deal models.Deal
-	if err = db.Collection("deals").FindOne(ctx, bson.M{"_id": id}).Decode(&deal); err != nil {
+	if err := db.DB.Where("id = ?", id).First(&deal).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "Deal not found", err)
 		return
 	}
@@ -67,7 +50,7 @@ func CreateDeal(c *gin.Context) {
 		return
 	}
 
-	deal.ID = primitive.NewObjectID()
+	deal.ID = models.NewUUID()
 	deal.CreatedAt = time.Now()
 	deal.UpdatedAt = time.Now()
 
@@ -78,10 +61,7 @@ func CreateDeal(c *gin.Context) {
 		deal.Stage = "lead"
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("deals").InsertOne(ctx, deal); err != nil {
+	if err := db.DB.Create(&deal).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create deal", err)
 		return
 	}
@@ -90,8 +70,8 @@ func CreateDeal(c *gin.Context) {
 }
 
 func UpdateDeal(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid deal ID", err)
 		return
 	}
@@ -104,7 +84,7 @@ func UpdateDeal(c *gin.Context) {
 
 	body.UpdatedAt = time.Now()
 
-	update := bson.M{"$set": bson.M{
+	result := db.DB.Model(&models.Deal{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"title":         body.Title,
 		"contactId":     body.ContactID,
 		"contactName":   body.ContactName,
@@ -114,17 +94,12 @@ func UpdateDeal(c *gin.Context) {
 		"assignedTo":    body.AssignedTo,
 		"expectedClose": body.ExpectedClose,
 		"updatedAt":     body.UpdatedAt,
-	}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("deals").UpdateOne(ctx, bson.M{"_id": id}, update)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update deal", err)
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update deal", result.Error)
 		return
 	}
-	if result.MatchedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Deal not found")
 		return
 	}
@@ -134,21 +109,18 @@ func UpdateDeal(c *gin.Context) {
 }
 
 func DeleteDeal(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid deal ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("deals").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to delete deal", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.Deal{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete deal", result.Error)
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Deal not found")
 		return
 	}

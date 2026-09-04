@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -11,8 +11,7 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -24,19 +23,9 @@ func GetUsers(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	cursor, err := db.Collection("users").Find(ctx, bson.M{"companyId": currentUser.CompanyID})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to fetch users", err)
-		return
-	}
-	defer cursor.Close(ctx)
-
 	users := make([]models.User, 0)
-	if err = cursor.All(ctx, &users); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode users", err)
+	if err := db.DB.Where("companyId = ?", currentUser.CompanyID).Find(&users).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch users", err)
 		return
 	}
 
@@ -55,17 +44,14 @@ type createUserInput struct {
 }
 
 func GetUser(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var user models.User
-	if err = db.Collection("users").FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
+	if err := db.DB.Where("id = ?", id).First(&user).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "User not found", err)
 		return
 	}
@@ -81,8 +67,8 @@ type updateUserInput struct {
 }
 
 func UpdateUser(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
 		return
 	}
@@ -93,47 +79,47 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 
-	update := bson.M{"$set": bson.M{
-		"name":        input.Name,
-		"email":       input.Email,
-		"permissions": input.Permissions,
-	}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("users").UpdateOne(ctx, bson.M{"_id": id}, update)
+	// "permissions" is a JSON-serialized column; raw map updates bypass the
+	// model's field serializer, so marshal it to JSON ourselves.
+	permissionsJSON, err := json.Marshal(input.Permissions)
 	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update user", err)
+		utils.Err(c, http.StatusInternalServerError, "Failed to encode permissions", err)
 		return
 	}
-	if result.MatchedCount == 0 {
+
+	result := db.DB.Model(&models.User{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"name":        input.Name,
+		"email":       input.Email,
+		"permissions": string(permissionsJSON),
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update user", result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "User not found")
 		return
 	}
 
 	var updated models.User
-	db.Collection("users").FindOne(ctx, bson.M{"_id": id}).Decode(&updated)
+	db.DB.Where("id = ?", id).First(&updated) //nolint
 	updated.Password = ""
 	c.JSON(http.StatusOK, updated)
 }
 
 func DeleteUser(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("users").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to delete user", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.User{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete user", result.Error)
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "User not found")
 		return
 	}
@@ -148,13 +134,10 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	currentUser := c.MustGet("user").(models.User)
 
 	var existing models.User
-	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&existing); err == nil {
+	if err := db.DB.Where("email = ?", input.Email).First(&existing).Error; err == nil {
 		utils.Err(c, http.StatusBadRequest, "Email already registered")
 		return
 	}
@@ -177,7 +160,7 @@ func CreateUser(c *gin.Context) {
 	}
 
 	newUser := models.User{
-		ID:          primitive.NewObjectID(),
+		ID:          models.NewUUID(),
 		Name:        input.Name,
 		Email:       input.Email,
 		Password:    string(hash),
@@ -189,7 +172,7 @@ func CreateUser(c *gin.Context) {
 		Permissions: permissions,
 	}
 
-	if _, err = db.Collection("users").InsertOne(ctx, newUser); err != nil {
+	if err := db.DB.Create(&newUser).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create user", err)
 		return
 	}

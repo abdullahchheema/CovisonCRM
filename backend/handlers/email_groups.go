@@ -1,53 +1,62 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"net/http"
 	"time"
 
 	"tinycrm/db"
 	"tinycrm/models"
+	"tinycrm/services"
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
-func GetEmailGroups(c *gin.Context) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// EmailGroupWithCount adds the resolved member count: len(ContactIDs) for
+// static groups, or the live tag-rule match count for dynamic groups — which
+// is what lets a dynamic group's displayed size grow automatically.
+type EmailGroupWithCount struct {
+	models.EmailGroup
+	ContactCount int `json:"contactCount"`
+}
 
-	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
-	cursor, err := db.Collection("email_groups").Find(ctx, bson.M{}, opts)
-	if err != nil {
+func resolveGroupCount(g models.EmailGroup) int {
+	if g.Type == "dynamic" {
+		ids, err := services.ContactIDsForTags(g.TagIDs, g.TagMatch)
+		if err != nil {
+			return 0
+		}
+		return len(ids)
+	}
+	return len(g.ContactIDs)
+}
+
+func GetEmailGroups(c *gin.Context) {
+	groups := make([]models.EmailGroup, 0)
+	if err := db.DB.Order("createdAt DESC").Find(&groups).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to fetch email groups", err)
 		return
 	}
-	defer cursor.Close(ctx)
 
-	groups := make([]models.EmailGroup, 0)
-	if err = cursor.All(ctx, &groups); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode email groups", err)
-		return
+	result := make([]EmailGroupWithCount, len(groups))
+	for i, g := range groups {
+		result[i] = EmailGroupWithCount{EmailGroup: g, ContactCount: resolveGroupCount(g)}
 	}
 
-	c.JSON(http.StatusOK, groups)
+	c.JSON(http.StatusOK, result)
 }
 
 func GetEmailGroup(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid group ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var group models.EmailGroup
-	if err = db.Collection("email_groups").FindOne(ctx, bson.M{"_id": id}).Decode(&group); err != nil {
+	if err := db.DB.Where("id = ?", id).First(&group).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "Email group not found", err)
 		return
 	}
@@ -62,17 +71,20 @@ func CreateEmailGroup(c *gin.Context) {
 		return
 	}
 
-	group.ID = primitive.NewObjectID()
+	group.ID = models.NewUUID()
 	group.CreatedAt = time.Now()
 	group.UpdatedAt = time.Now()
 	if group.ContactIDs == nil {
 		group.ContactIDs = []string{}
 	}
+	if group.Type == "" {
+		group.Type = "static"
+	}
+	if group.TagIDs == nil {
+		group.TagIDs = []string{}
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("email_groups").InsertOne(ctx, group); err != nil {
+	if err := db.DB.Create(&group).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create email group", err)
 		return
 	}
@@ -81,8 +93,8 @@ func CreateEmailGroup(c *gin.Context) {
 }
 
 func UpdateEmailGroup(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid group ID", err)
 		return
 	}
@@ -97,23 +109,40 @@ func UpdateEmailGroup(c *gin.Context) {
 	if body.ContactIDs == nil {
 		body.ContactIDs = []string{}
 	}
+	if body.Type == "" {
+		body.Type = "static"
+	}
+	if body.TagIDs == nil {
+		body.TagIDs = []string{}
+	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	update := bson.M{"$set": bson.M{
-		"name":        body.Name,
-		"description": body.Description,
-		"contactIds":  body.ContactIDs,
-		"updatedAt":   body.UpdatedAt,
-	}}
-
-	result, err := db.Collection("email_groups").UpdateOne(ctx, bson.M{"_id": id}, update)
+	// "contactIds"/"tagIds" are JSON-serialized columns; raw map updates
+	// bypass the model's field serializer, so marshal them ourselves.
+	contactIDsJSON, err := json.Marshal(body.ContactIDs)
 	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update email group", err)
+		utils.Err(c, http.StatusInternalServerError, "Failed to encode contactIds", err)
 		return
 	}
-	if result.MatchedCount == 0 {
+	tagIDsJSON, err := json.Marshal(body.TagIDs)
+	if err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to encode tagIds", err)
+		return
+	}
+
+	result := db.DB.Model(&models.EmailGroup{}).Where("id = ?", id).Updates(map[string]interface{}{
+		"name":        body.Name,
+		"description": body.Description,
+		"contactIds":  string(contactIDsJSON),
+		"type":        body.Type,
+		"tagIds":      string(tagIDsJSON),
+		"tagMatch":    body.TagMatch,
+		"updatedAt":   body.UpdatedAt,
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update email group", result.Error)
+		return
+	}
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Email group not found")
 		return
 	}
@@ -123,21 +152,18 @@ func UpdateEmailGroup(c *gin.Context) {
 }
 
 func DeleteEmailGroup(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid group ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("email_groups").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to delete email group", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.EmailGroup{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete email group", result.Error)
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Email group not found")
 		return
 	}

@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // NoteType distinguishes manual notes from activity-log entries.
@@ -19,10 +17,14 @@ const (
 )
 
 type Note struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"  json:"_id"`
-	ContactID primitive.ObjectID `bson:"contactId"      json:"contactId"`
-	Type      NoteType           `bson:"type"           json:"type"`
-	Body      string             `bson:"body"           json:"body"`
-	Author    string             `bson:"author"         json:"author"` // user name from JWT
-	CreatedAt time.Time          `bson:"createdAt"      json:"createdAt"`
+	ID        string    `gorm:"column:id;primaryKey;type:char(36)" json:"_id"`
+	ContactID string    `gorm:"column:contactId" json:"contactId"`
+	Type      NoteType  `gorm:"column:type" json:"type"`
+	Body      string    `gorm:"column:body;type:text" json:"body"`
+	Author    string    `gorm:"column:author" json:"author"` // user name from JWT
+	CreatedAt time.Time `gorm:"column:createdAt" json:"createdAt"`
+}
+
+func (Note) TableName() string {
+	return "contact_notes"
 }

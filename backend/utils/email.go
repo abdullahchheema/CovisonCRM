@@ -9,7 +9,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func SendEmail(to, subject, body string) {
+func SendEmail(to, subject, body string) error {
 	from := os.Getenv("EMAIL_ID")
 	password := os.Getenv("EMAIL_PWD")
 
@@ -30,9 +30,11 @@ func SendEmail(to, subject, body string) {
 	m.SetBody("text/html", body)
 
 	d := gomail.NewDialer(smtpHost, smtpPort, from, password)
-	d.TLSConfig = &tls.Config{InsecureSkipVerify: false}
+	d.TLSConfig = &tls.Config{ServerName: smtpHost}
 
 	if err := d.DialAndSend(m); err != nil {
 		log.Printf("Failed to send email to %s: %v", to, err)
+		return err
 	}
+	return nil
 }

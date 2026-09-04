@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"time"
 
@@ -10,34 +9,21 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 // GET /api/contacts/:id/notes
 // Returns all notes for a contact, newest first.
 func GetNotes(c *gin.Context) {
-	contactID, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	contactID := c.Param("id")
+	if _, err := uuid.Parse(contactID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid contact ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	opts := options.Find().SetSort(bson.D{{Key: "createdAt", Value: -1}})
-	cursor, err := db.Collection("contact_notes").Find(ctx, bson.M{"contactId": contactID}, opts)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to fetch notes", err)
-		return
-	}
-	defer cursor.Close(ctx)
-
 	notes := make([]models.Note, 0)
-	if err = cursor.All(ctx, &notes); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode notes", err)
+	if err := db.DB.Where("contactId = ?", contactID).Order("createdAt DESC").Find(&notes).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch notes", err)
 		return
 	}
 
@@ -47,8 +33,8 @@ func GetNotes(c *gin.Context) {
 // POST /api/contacts/:id/notes
 // Body: { "type": "note|call|email|meeting", "body": "..." }
 func AddNote(c *gin.Context) {
-	contactID, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	contactID := c.Param("id")
+	if _, err := uuid.Parse(contactID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid contact ID", err)
 		return
 	}
@@ -72,7 +58,7 @@ func AddNote(c *gin.Context) {
 	}
 
 	note := models.Note{
-		ID:        primitive.NewObjectID(),
+		ID:        models.NewUUID(),
 		ContactID: contactID,
 		Type:      body.Type,
 		Body:      body.Body,
@@ -80,37 +66,28 @@ func AddNote(c *gin.Context) {
 		CreatedAt: time.Now(),
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("contact_notes").InsertOne(ctx, note); err != nil {
+	if err := db.DB.Create(&note).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to save note", err)
 		return
 	}
 
 	// Bump contact's lastActivity
-	db.Collection("contacts").UpdateOne(ctx,
-		bson.M{"_id": contactID},
-		bson.M{"$set": bson.M{"lastActivity": note.CreatedAt}},
-	)
+	db.DB.Model(&models.Contact{}).Where("id = ?", contactID).Update("lastActivity", note.CreatedAt)
 
 	c.JSON(http.StatusCreated, note)
 }
 
 // DELETE /api/contacts/:id/notes/:noteId
 func DeleteNote(c *gin.Context) {
-	noteID, err := primitive.ObjectIDFromHex(c.Param("noteId"))
-	if err != nil {
+	noteID := c.Param("noteId")
+	if _, err := uuid.Parse(noteID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid note ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("contact_notes").DeleteOne(ctx, bson.M{"_id": noteID})
-	if err != nil || result.DeletedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Note not found", err)
+	result := db.DB.Where("id = ?", noteID).Delete(&models.Note{})
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Note not found", result.Error)
 		return
 	}
 

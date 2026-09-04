@@ -2,19 +2,17 @@ package models
 
 import (
 	"time"
-
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type User struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	Name        string             `bson:"name" json:"name"`
-	Email       string             `bson:"email" json:"email"`
-	Password    string             `bson:"password" json:"password,omitempty"`
-	Token       string             `bson:"token,omitempty" json:"token,omitempty"`
-	Permissions []string           `bson:"permissions" json:"permissions"`
-	Verified    bool               `bson:"verified" json:"verified"`
-	Date        time.Time          `bson:"date" json:"date"`
-	CompanyID   string             `bson:"companyId,omitempty" json:"companyId,omitempty"`
-	Company     string             `bson:"company,omitempty" json:"company,omitempty"`
+	ID          string    `gorm:"column:id;primaryKey;type:char(36)" json:"_id"`
+	Name        string    `gorm:"column:name" json:"name"`
+	Email       string    `gorm:"column:email;uniqueIndex;size:255" json:"email"`
+	Password    string    `gorm:"column:password" json:"password,omitempty"`
+	Token       string    `gorm:"column:token" json:"token,omitempty"`
+	Permissions []string  `gorm:"column:permissions;serializer:json;type:json" json:"permissions"`
+	Verified    bool      `gorm:"column:verified" json:"verified"`
+	Date        time.Time `gorm:"column:date" json:"date"`
+	CompanyID   string    `gorm:"column:companyId" json:"companyId,omitempty"`
+	Company     string    `gorm:"column:company" json:"company,omitempty"`
 }

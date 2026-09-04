@@ -67,11 +67,23 @@ func main() {
 			contacts.POST("", handlers.CreateContact)
 			contacts.GET("/export", handlers.ExportContacts)
 			contacts.POST("/import", handlers.ImportContacts)
+			contacts.POST("/bulk-delete", handlers.BulkDeleteContacts)
+			contacts.POST("/bulk-tag", handlers.BulkTagContacts)
+			contacts.POST("/audience-count", handlers.GetAudienceCount)
 			contacts.PUT("/:id", handlers.UpdateContact)
 			contacts.DELETE("/:id", handlers.DeleteContact)
 			contacts.GET("/:id/notes", handlers.GetNotes)
 			contacts.POST("/:id/notes", handlers.AddNote)
 			contacts.DELETE("/:id/notes/:noteId", handlers.DeleteNote)
+		}
+
+		tags := api.Group("/tags")
+		tags.Use(middleware.Auth())
+		{
+			tags.GET("", handlers.GetTags)
+			tags.POST("", handlers.CreateTag)
+			tags.PUT("/:id", handlers.UpdateTag)
+			tags.DELETE("/:id", handlers.DeleteTag)
 		}
 
 		company := api.Group("/company")
@@ -119,6 +131,7 @@ func main() {
 		dashboard.Use(middleware.Auth())
 		{
 			dashboard.GET("/stats", handlers.GetDashboardStats)
+			dashboard.GET("/planner", handlers.GetPlanner)
 		}
 
 		emailTemplates := api.Group("/email-templates")
@@ -149,6 +162,15 @@ func main() {
 			emailGroups.GET("/:id", handlers.GetEmailGroup)
 			emailGroups.PUT("/:id", handlers.UpdateEmailGroup)
 			emailGroups.DELETE("/:id", handlers.DeleteEmailGroup)
+		}
+
+		emailSends := api.Group("/email-sends")
+		emailSends.Use(middleware.Auth())
+		{
+			emailSends.GET("", handlers.GetEmailSends)
+			emailSends.POST("", handlers.CreateEmailSend)
+			emailSends.GET("/:contactId/history", handlers.GetEmailSendHistory)
+			emailSends.DELETE("/:contactId/history/:id", handlers.DeleteEmailSend)
 		}
 	}
 

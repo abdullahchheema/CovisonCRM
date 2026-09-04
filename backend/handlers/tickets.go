@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,20 +11,18 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"github.com/google/uuid"
 )
 
 func GetTickets(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
-	search        := strings.TrimSpace(c.Query("search"))
-	filterTitle   := strings.TrimSpace(c.Query("title"))
+	search := strings.TrimSpace(c.Query("search"))
+	filterTitle := strings.TrimSpace(c.Query("title"))
 	filterContact := strings.TrimSpace(c.Query("contact"))
-	status        := strings.TrimSpace(c.Query("status"))
-	priority      := strings.TrimSpace(c.Query("priority"))
-	category      := strings.TrimSpace(c.Query("category"))
+	status := strings.TrimSpace(c.Query("status"))
+	priority := strings.TrimSpace(c.Query("priority"))
+	category := strings.TrimSpace(c.Query("category"))
 
 	if page < 1 {
 		page = 1
@@ -34,49 +31,40 @@ func GetTickets(c *gin.Context) {
 		limit = 50
 	}
 
-	filter := bson.M{}
+	query := db.DB.Model(&models.Ticket{})
+
 	if search != "" {
-		filter["$or"] = bson.A{
-			bson.M{"title":   bson.M{"$regex": search, "$options": "i"}},
-			bson.M{"contact": bson.M{"$regex": search, "$options": "i"}},
-		}
+		like := "%" + search + "%"
+		query = query.Where("title LIKE ? OR contact LIKE ?", like, like)
 	}
 	if filterTitle != "" {
-		filter["title"] = bson.M{"$regex": filterTitle, "$options": "i"}
+		query = query.Where("title LIKE ?", "%"+filterTitle+"%")
 	}
 	if filterContact != "" {
-		filter["contact"] = bson.M{"$regex": filterContact, "$options": "i"}
+		query = query.Where("contact LIKE ?", "%"+filterContact+"%")
 	}
 	if status != "" {
-		filter["status"] = status
+		query = query.Where("status = ?", status)
 	}
 	if priority != "" {
-		filter["priority"] = priority
+		query = query.Where("priority = ?", priority)
 	}
 	if category != "" {
-		filter["category"] = category
+		query = query.Where("category = ?", category)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	total, _ := db.Collection("tickets").CountDocuments(ctx, filter)
-
-	opts := options.Find().
-		SetSkip(int64((page - 1) * limit)).
-		SetLimit(int64(limit)).
-		SetSort(bson.D{{Key: "createdAt", Value: -1}})
-
-	cursor, err := db.Collection("tickets").Find(ctx, filter, opts)
-	if err != nil {
+	var total int64
+	if err := query.Count(&total).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to fetch tickets", err)
 		return
 	}
-	defer cursor.Close(ctx)
 
 	tickets := make([]models.Ticket, 0)
-	if err = cursor.All(ctx, &tickets); err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to decode tickets", err)
+	if err := query.Order("createdAt DESC").
+		Offset((page - 1) * limit).
+		Limit(limit).
+		Find(&tickets).Error; err != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to fetch tickets", err)
 		return
 	}
 
@@ -89,17 +77,14 @@ func GetTickets(c *gin.Context) {
 }
 
 func GetTicket(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid ticket ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var ticket models.Ticket
-	if err = db.Collection("tickets").FindOne(ctx, bson.M{"_id": id}).Decode(&ticket); err != nil {
+	if err := db.DB.Where("id = ?", id).First(&ticket).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "Ticket not found", err)
 		return
 	}
@@ -114,14 +99,11 @@ func CreateTicket(c *gin.Context) {
 		return
 	}
 
-	ticket.ID = primitive.NewObjectID()
+	ticket.ID = models.NewUUID()
 	ticket.CreatedAt = time.Now()
 	ticket.UpdatedAt = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("tickets").InsertOne(ctx, ticket); err != nil {
+	if err := db.DB.Create(&ticket).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create ticket", err)
 		return
 	}
@@ -130,8 +112,8 @@ func CreateTicket(c *gin.Context) {
 }
 
 func UpdateTicket(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid ticket ID", err)
 		return
 	}
@@ -144,7 +126,7 @@ func UpdateTicket(c *gin.Context) {
 
 	body.UpdatedAt = time.Now()
 
-	update := bson.M{"$set": bson.M{
+	result := db.DB.Model(&models.Ticket{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"title":       body.Title,
 		"description": body.Description,
 		"contact":     body.Contact,
@@ -154,17 +136,12 @@ func UpdateTicket(c *gin.Context) {
 		"status":      body.Status,
 		"assignedTo":  body.AssignedTo,
 		"updatedAt":   body.UpdatedAt,
-	}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("tickets").UpdateOne(ctx, bson.M{"_id": id}, update)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update ticket", err)
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update ticket", result.Error)
 		return
 	}
-	if result.MatchedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Ticket not found")
 		return
 	}
@@ -174,21 +151,18 @@ func UpdateTicket(c *gin.Context) {
 }
 
 func DeleteTicket(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid ticket ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("tickets").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to delete ticket", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.Ticket{})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to delete ticket", result.Error)
 		return
 	}
-	if result.DeletedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Ticket not found")
 		return
 	}

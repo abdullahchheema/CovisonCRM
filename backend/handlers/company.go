@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"encoding/base64"
 	"fmt"
 	"io"
@@ -14,16 +13,13 @@ import (
 	"tinycrm/utils"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func UploadCompanyLogo(c *gin.Context) {
 	currentUser := c.MustGet("user").(models.User)
 
-	companyID, err := primitive.ObjectIDFromHex(currentUser.CompanyID)
-	if err != nil {
-		utils.Err(c, http.StatusBadRequest, "Invalid company ID", err)
+	if currentUser.CompanyID == "" {
+		utils.Err(c, http.StatusBadRequest, "Invalid company ID")
 		return
 	}
 
@@ -58,15 +54,9 @@ func UploadCompanyLogo(c *gin.Context) {
 
 	dataURI := fmt.Sprintf("data:%s;base64,%s", mime, base64.StdEncoding.EncodeToString(data))
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	_, err = db.Collection("companies").UpdateOne(ctx,
-		bson.M{"_id": companyID},
-		bson.M{"$set": bson.M{"logo": dataURI}},
-	)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update company logo", err)
+	result := db.DB.Model(&models.Company{}).Where("id = ?", currentUser.CompanyID).Update("logo", dataURI)
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update company logo", result.Error)
 		return
 	}
 
@@ -76,17 +66,13 @@ func UploadCompanyLogo(c *gin.Context) {
 func GetCompany(c *gin.Context) {
 	currentUser := c.MustGet("user").(models.User)
 
-	companyID, err := primitive.ObjectIDFromHex(currentUser.CompanyID)
-	if err != nil {
-		utils.Err(c, http.StatusBadRequest, "Invalid company ID", err)
+	if currentUser.CompanyID == "" {
+		utils.Err(c, http.StatusBadRequest, "Invalid company ID")
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var company models.Company
-	if err := db.Collection("companies").FindOne(ctx, bson.M{"_id": companyID}).Decode(&company); err != nil {
+	if err := db.DB.Where("id = ?", currentUser.CompanyID).First(&company).Error; err != nil {
 		utils.Err(c, http.StatusNotFound, "Company not found", err)
 		return
 	}
@@ -97,9 +83,8 @@ func GetCompany(c *gin.Context) {
 func UpdateCompany(c *gin.Context) {
 	currentUser := c.MustGet("user").(models.User)
 
-	companyID, err := primitive.ObjectIDFromHex(currentUser.CompanyID)
-	if err != nil {
-		utils.Err(c, http.StatusBadRequest, "Invalid company ID", err)
+	if currentUser.CompanyID == "" {
+		utils.Err(c, http.StatusBadRequest, "Invalid company ID")
 		return
 	}
 
@@ -109,30 +94,25 @@ func UpdateCompany(c *gin.Context) {
 		return
 	}
 
-	update := bson.M{"$set": bson.M{
+	result := db.DB.Model(&models.Company{}).Where("id = ?", currentUser.CompanyID).Updates(map[string]interface{}{
 		"name":        body.Name,
 		"number":      body.Number,
 		"cmail":       body.CMail,
 		"address":     body.Address,
 		"website":     body.Website,
 		"companySize": body.CompanySize,
-	}}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("companies").UpdateOne(ctx, bson.M{"_id": companyID}, update)
-	if err != nil {
-		utils.Err(c, http.StatusInternalServerError, "Failed to update company", err)
+	})
+	if result.Error != nil {
+		utils.Err(c, http.StatusInternalServerError, "Failed to update company", result.Error)
 		return
 	}
-	if result.MatchedCount == 0 {
+	if result.RowsAffected == 0 {
 		utils.Err(c, http.StatusNotFound, "Company not found")
 		return
 	}
 
 	var updated models.Company
-	db.Collection("companies").FindOne(ctx, bson.M{"_id": companyID}).Decode(&updated) //nolint
+	db.DB.Where("id = ?", currentUser.CompanyID).First(&updated) //nolint
 	c.JSON(http.StatusOK, updated)
 }
 
@@ -143,13 +123,10 @@ func CreateCompany(c *gin.Context) {
 		return
 	}
 
-	company.ID = primitive.NewObjectID()
+	company.ID = models.NewUUID()
 	company.Date = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("companies").InsertOne(ctx, company); err != nil {
+	if err := db.DB.Create(&company).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create company", err)
 		return
 	}

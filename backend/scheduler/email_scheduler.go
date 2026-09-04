@@ -1,21 +1,19 @@
 package scheduler
 
 import (
-	"context"
 	"log"
 	"strings"
 	"time"
 
 	"tinycrm/db"
 	"tinycrm/models"
+	"tinycrm/services"
 	"tinycrm/utils"
-
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // Start launches the email scheduler goroutine. It ticks every minute and
-// fires any active email templates whose scheduled time matches now.
+// fires any active email templates and pending ad-hoc send jobs whose
+// scheduled time matches now.
 func Start() {
 	go run()
 }
@@ -26,29 +24,20 @@ func run() {
 	log.Println("Email scheduler started")
 	for range ticker.C {
 		processTemplates()
+		processSendJobs()
 	}
 }
 
 func processTemplates() {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
 	now := time.Now()
 	today := now.Format("2006-01-02")
 	currentTime := now.Format("15:04")
 	currentWeekday := strings.ToLower(now.Weekday().String()) // e.g. "monday"
 	currentDay := now.Format("2")                             // day of month without leading zero
 
-	cursor, err := db.Collection("email_templates").Find(ctx, bson.M{"status": "active"})
-	if err != nil {
-		log.Printf("Scheduler: failed to fetch templates: %v", err)
-		return
-	}
-	defer cursor.Close(ctx)
-
 	var templates []models.EmailTemplate
-	if err := cursor.All(ctx, &templates); err != nil {
-		log.Printf("Scheduler: failed to decode templates: %v", err)
+	if err := db.DB.Where("status = ?", "active").Find(&templates).Error; err != nil {
+		log.Printf("Scheduler: failed to fetch templates: %v", err)
 		return
 	}
 
@@ -57,28 +46,39 @@ func processTemplates() {
 			continue
 		}
 
-		recipients := resolveRecipients(ctx, t.Recipient)
-		if len(recipients) == 0 {
-			log.Printf("Scheduler: template %q has no resolvable recipients", t.Name)
-			continue
-		}
-
-		for _, r := range recipients {
-			rec := r // capture for goroutine
-			go func() {
-				subject := renderVars(t.Subject, rec.name, rec.email, today)
-				body := renderVars(t.Body, rec.name, rec.email, today)
-				utils.SendEmail(rec.email, subject, body)
-				log.Printf("Scheduler: sent %q to %s", t.Name, rec.email)
-			}()
+		// If the recipient field names an email group, its contacts are
+		// real CRM contacts, so route through SendAndLog and record them in
+		// the Sent Emails log. Otherwise treat it as raw comma-separated
+		// addresses (legacy behavior) sent directly, with no contact to log
+		// against.
+		var group models.EmailGroup
+		if err := db.DB.Where("name = ?", t.Recipient).First(&group).Error; err == nil && len(group.ContactIDs) > 0 {
+			contacts, contactsErr := services.ResolveContacts(group.ContactIDs)
+			if contactsErr != nil {
+				log.Printf("Scheduler: template %q: failed to resolve group contacts: %v", t.Name, contactsErr)
+			} else {
+				groupID := group.ID
+				services.SendAndLog(contacts, t.Subject, t.Body, "template", &t.ID, t.Name, "group", &groupID, group.Name, nil)
+			}
+		} else {
+			for _, raw := range strings.Split(t.Recipient, ",") {
+				email := strings.TrimSpace(raw)
+				if email == "" {
+					continue
+				}
+				go func(to string) {
+					subject := services.RenderVars(t.Subject, "", to, "", "", today)
+					body := utils.LexicalToHTML(services.RenderVars(t.Body, "", to, "", "", today))
+					utils.SendEmail(to, subject, body)
+					log.Printf("Scheduler: sent %q to %s", t.Name, to)
+				}(email)
+			}
 		}
 
 		// Mark one-time templates as sent so they don't fire again
 		if t.Frequency == "one-time" {
-			_, err := db.Collection("email_templates").UpdateOne(ctx,
-				bson.M{"_id": t.ID},
-				bson.M{"$set": bson.M{"status": "sent", "updatedAt": time.Now()}},
-			)
+			err := db.DB.Model(&models.EmailTemplate{}).Where("id = ?", t.ID).
+				Updates(map[string]interface{}{"status": "sent", "updatedAt": time.Now()}).Error
 			if err != nil {
 				log.Printf("Scheduler: failed to mark template %q as sent: %v", t.Name, err)
 			}
@@ -103,70 +103,93 @@ func isDue(t models.EmailTemplate, today, currentTime, currentWeekday, currentDa
 	return false
 }
 
-type recipient struct {
-	name  string
-	email string
-}
+// processSendJobs fires any pending ad-hoc "Send Email" jobs (one-time,
+// scheduled for the future) whose send date/time has arrived.
+func processSendJobs() {
+	now := time.Now()
+	today := now.Format("2006-01-02")
+	currentTime := now.Format("15:04")
 
-// resolveRecipients resolves a template's Recipient field to a list of
-// {name, email} pairs. If the value matches an email group name, it expands
-// the group's contacts. Otherwise it treats it as comma-separated email
-// addresses.
-func resolveRecipients(ctx context.Context, value string) []recipient {
-	// Try to match an email group by name
-	var group models.EmailGroup
-	err := db.Collection("email_groups").FindOne(ctx, bson.M{"name": value}).Decode(&group)
-	if err == nil && len(group.ContactIDs) > 0 {
-		return recipientsFromGroup(ctx, group.ContactIDs)
+	var jobs []models.EmailSendJob
+	if err := db.DB.Where("status = ?", "pending").Find(&jobs).Error; err != nil {
+		log.Printf("Scheduler: failed to fetch email send jobs: %v", err)
+		return
 	}
 
-	// Treat as comma-separated email addresses
-	var out []recipient
-	for _, raw := range strings.Split(value, ",") {
-		email := strings.TrimSpace(raw)
-		if email != "" {
-			out = append(out, recipient{name: "", email: email})
+	for _, j := range jobs {
+		if j.SendDate != today || j.SendTime != currentTime {
+			continue
+		}
+
+		var contacts []models.Contact
+		var groupName string
+		switch {
+		case j.RecipientMode == "audience":
+			cs, err := services.ResolveAudience(services.AudienceSelection{
+				ContactIDs:    j.ContactIDs,
+				GroupIDs:      j.GroupIDs,
+				TagIDs:        j.TagIDs,
+				TagMatch:      j.TagMatch,
+				ExcludeTagIDs: j.ExcludeTagIDs,
+			})
+			if err != nil {
+				log.Printf("Scheduler: send job %s: failed to resolve audience: %v", j.ID, err)
+			} else {
+				contacts = cs
+				groupName = describeJobAudience(j)
+			}
+		case j.RecipientMode == "group" && j.GroupID != nil:
+			cs, group, err := services.ResolveGroupContacts(*j.GroupID)
+			if err != nil {
+				log.Printf("Scheduler: send job %s: failed to resolve group: %v", j.ID, err)
+			} else {
+				contacts = cs
+				groupName = group.Name
+			}
+		default:
+			cs, err := services.ResolveContacts(j.ContactIDs)
+			if err != nil {
+				log.Printf("Scheduler: send job %s: failed to resolve contacts: %v", j.ID, err)
+			} else {
+				contacts = cs
+			}
+		}
+
+		lead := &services.LeadDetails{
+			Title:         j.LeadTitle,
+			Value:         j.LeadValue,
+			Currency:      j.LeadCurrency,
+			AssignedTo:    j.LeadAssignedTo,
+			ExpectedClose: j.LeadExpectedClose,
+		}
+		services.SendAndLog(contacts, j.Subject, j.Body, j.SourceType, j.SourceTemplateID, j.SourceTemplateName, j.RecipientMode, j.GroupID, groupName, lead)
+
+		if err := db.DB.Model(&models.EmailSendJob{}).Where("id = ?", j.ID).
+			Updates(map[string]interface{}{"status": "sent", "updatedAt": time.Now()}).Error; err != nil {
+			log.Printf("Scheduler: failed to mark send job %s as sent: %v", j.ID, err)
 		}
 	}
-	return out
 }
 
-func recipientsFromGroup(ctx context.Context, contactIDs []string) []recipient {
-	var ids []primitive.ObjectID
-	for _, sid := range contactIDs {
-		oid, err := primitive.ObjectIDFromHex(sid)
-		if err == nil {
-			ids = append(ids, oid)
+// describeJobAudience builds a readable "Tags: …  ·  Groups: …" label for an
+// audience-mode send job, for the EmailSend history row.
+func describeJobAudience(j models.EmailSendJob) string {
+	var tagNames []string
+	if len(j.TagIDs) > 0 {
+		var tags []models.Tag
+		db.DB.Where("id IN ?", j.TagIDs).Find(&tags) //nolint
+		for _, t := range tags {
+			tagNames = append(tagNames, t.Name)
 		}
 	}
-	if len(ids) == 0 {
-		return nil
-	}
-
-	cursor, err := db.Collection("contacts").Find(ctx, bson.M{"_id": bson.M{"$in": ids}})
-	if err != nil {
-		log.Printf("Scheduler: failed to fetch group contacts: %v", err)
-		return nil
-	}
-	defer cursor.Close(ctx)
-
-	var contacts []models.Contact
-	if err := cursor.All(ctx, &contacts); err != nil {
-		return nil
-	}
-
-	var out []recipient
-	for _, c := range contacts {
-		if c.Email != "" {
-			out = append(out, recipient{name: c.Name, email: c.Email})
+	var groupNames []string
+	if len(j.GroupIDs) > 0 {
+		var groups []models.EmailGroup
+		db.DB.Where("id IN ?", j.GroupIDs).Find(&groups) //nolint
+		for _, g := range groups {
+			groupNames = append(groupNames, g.Name)
 		}
 	}
-	return out
-}
-
-func renderVars(s, name, email, date string) string {
-	s = strings.ReplaceAll(s, "{{name}}", name)
-	s = strings.ReplaceAll(s, "{{email}}", email)
-	s = strings.ReplaceAll(s, "{{date}}", date)
-	return s
+	sel := services.AudienceSelection{ContactIDs: j.ContactIDs, GroupIDs: j.GroupIDs, TagIDs: j.TagIDs}
+	return services.DescribeAudience(sel, tagNames, groupNames)
 }

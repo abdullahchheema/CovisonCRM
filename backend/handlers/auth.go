@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
 	"os"
 	"time"
@@ -15,8 +14,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -39,17 +36,14 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var existingCompany models.Company
-	if err := db.Collection("companies").FindOne(ctx, bson.M{"name": input.Company}).Decode(&existingCompany); err == nil {
+	if err := db.DB.Where("name = ?", input.Company).First(&existingCompany).Error; err == nil {
 		utils.Err(c, http.StatusBadRequest, "Company name already exists")
 		return
 	}
 
 	var existingUser models.User
-	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&existingUser); err == nil {
+	if err := db.DB.Where("email = ?", input.Email).First(&existingUser).Error; err == nil {
 		utils.Err(c, http.StatusBadRequest, "Email already registered")
 		return
 	}
@@ -68,21 +62,21 @@ func Register(c *gin.Context) {
 
 	// Create company first so its ID is available when inserting the user.
 	company := models.Company{
-		ID:   primitive.NewObjectID(),
+		ID:   models.NewUUID(),
 		Name: input.Company,
 		Date: time.Now(),
 	}
 
-	if _, err = db.Collection("companies").InsertOne(ctx, company); err != nil {
+	if err := db.DB.Create(&company).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create company", err)
 		return
 	}
 
 	user := models.User{
-		ID:          primitive.NewObjectID(),
-		Name:        input.Name,
-		Email:       input.Email,
-		Password:    string(hash),
+		ID:       models.NewUUID(),
+		Name:     input.Name,
+		Email:    input.Email,
+		Password: string(hash),
 		Permissions: []string{
 			"admin",
 			"users-view", "users-edit", "users-delete",
@@ -91,38 +85,27 @@ func Register(c *gin.Context) {
 			"tickets-view", "tickets-edit", "tickets-delete",
 			"projects-view", "projects-edit", "projects-delete",
 		},
-		Token:       token,
-		Verified:    false,
-		Date:        time.Now(),
-		CompanyID:   company.ID.Hex(),
-		Company:     company.Name,
+		Token: token,
+		// Email verification is disabled for this local/personal deployment —
+		// SMTP isn't configured with real credentials, so accounts are
+		// auto-verified at signup instead of requiring a clicked email link.
+		Verified:  true,
+		Date:      time.Now(),
+		CompanyID: company.ID,
+		Company:   company.Name,
 	}
 
-	// Patch company.createdBy now that we have the user ID.
-	company.CreatedBy = user.ID.Hex()
-	db.Collection("companies").UpdateOne(ctx, //nolint
-		bson.M{"_id": company.ID},
-		bson.M{"$set": bson.M{"createdBy": company.CreatedBy}},
-	)
-
-	if _, err = db.Collection("users").InsertOne(ctx, user); err != nil {
+	if err := db.DB.Create(&user).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create user", err)
 		return
 	}
 
-	encryptedEmail, err := utils.Encrypt(input.Email)
-	if err == nil {
-		frontendLink := os.Getenv("FRONTEND_LINK")
-		if frontendLink == "" {
-			frontendLink = "http://127.0.0.1:5173/"
-		}
-		verificationURL := frontendLink + "verification/" + encryptedEmail
-		emailBody := templates.VerificationEmail(input.Name, verificationURL)
-		go utils.SendEmail(input.Email, "Verify Your Email - Tiny CRM", emailBody)
-	}
+	// Patch company.createdBy now that we have the user ID.
+	db.DB.Model(&models.Company{}).Where("id = ?", company.ID).
+		Update("createdBy", user.ID) //nolint
 
 	// Frontend checks res.status === "201"
-	utils.Success(c, http.StatusCreated, "Registration successful. Please verify your email.")
+	utils.Success(c, http.StatusCreated, "Registration successful.")
 }
 
 func Login(c *gin.Context) {
@@ -132,11 +115,8 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var user models.User
-	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&user); err != nil {
+	if err := db.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		utils.Err(c, http.StatusBadRequest, "Email or password is incorrect")
 		return
 	}
@@ -158,10 +138,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	db.Collection("users").UpdateOne(ctx,
-		bson.M{"_id": user.ID},
-		bson.M{"$set": bson.M{"token": token}},
-	)
+	db.DB.Model(&models.User{}).Where("id = ?", user.ID).Update("token", token)
 
 	c.Header("auth-token", token)
 
@@ -178,7 +155,7 @@ func Login(c *gin.Context) {
 	}
 
 	utils.Success(c, http.StatusOK, gin.H{
-		"id":          user.ID.Hex(),
+		"id":          user.ID,
 		"name":        user.Name,
 		"email":       user.Email,
 		"type":        scope,
@@ -196,15 +173,9 @@ func VerifyEmail(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("users").UpdateOne(ctx,
-		bson.M{"email": email},
-		bson.M{"$set": bson.M{"verified": true}},
-	)
-	if err != nil || result.MatchedCount == 0 {
-		utils.Err(c, http.StatusBadRequest, "User not found", err)
+	result := db.DB.Model(&models.User{}).Where("email = ?", email).Update("verified", true)
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusBadRequest, "User not found", result.Error)
 		return
 	}
 
@@ -220,11 +191,8 @@ func ResendVerification(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var user models.User
-	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&user); err != nil {
+	if err := db.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		utils.Err(c, http.StatusBadRequest, "User not found")
 		return
 	}
@@ -255,11 +223,8 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	var user models.User
-	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&user); err != nil {
+	if err := db.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
 		utils.Err(c, http.StatusBadRequest, "User not found")
 		return
 	}
@@ -302,15 +267,9 @@ func ChangePassword(c *gin.Context) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("users").UpdateOne(ctx,
-		bson.M{"email": email},
-		bson.M{"$set": bson.M{"password": string(hash)}},
-	)
-	if err != nil || result.MatchedCount == 0 {
-		utils.Err(c, http.StatusBadRequest, "User not found", err)
+	result := db.DB.Model(&models.User{}).Where("email = ?", email).Update("password", string(hash))
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusBadRequest, "User not found", result.Error)
 		return
 	}
 

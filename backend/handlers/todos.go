@@ -1,22 +1,23 @@
 package handlers
 
 import (
-	"context"
+	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"tinycrm/db"
 	"tinycrm/models"
 	"tinycrm/utils"
 
+	"github.com/google/uuid"
+
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func CreateTodo(c *gin.Context) {
-	projectID, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	projectID := c.Param("id")
+	if _, err := uuid.Parse(projectID); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid project ID", err)
 		return
 	}
@@ -27,14 +28,11 @@ func CreateTodo(c *gin.Context) {
 		return
 	}
 
-	todo.ID = primitive.NewObjectID()
+	todo.ID = models.NewUUID()
 	todo.ProjectID = projectID
 	todo.CreatedAt = time.Now()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	if _, err := db.Collection("todos").InsertOne(ctx, todo); err != nil {
+	if err := db.DB.Create(&todo).Error; err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to create todo", err)
 		return
 	}
@@ -43,38 +41,48 @@ func CreateTodo(c *gin.Context) {
 }
 
 func UpdateTodo(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid todo ID", err)
 		return
 	}
 
-	var body bson.M
+	var body map[string]interface{}
 	if err := c.ShouldBindJSON(&body); err != nil {
 		utils.Err(c, http.StatusBadRequest, err.Error())
 		return
 	}
+	delete(body, "_id")
 
-	// Convert columnId string to ObjectID if present
-	if colStr, ok := body["columnId"].(string); ok {
-		colOID, err := primitive.ObjectIDFromHex(colStr)
+	// The "author" column is a JSON-serialized struct; raw map updates bypass
+	// the model's field serializer, so marshal it to JSON ourselves.
+	if author, ok := body["author"]; ok {
+		raw, err := json.Marshal(author)
 		if err != nil {
-			utils.Err(c, http.StatusBadRequest, "Invalid column ID", err)
+			utils.Err(c, http.StatusBadRequest, "Invalid author", err)
 			return
 		}
-		body["columnId"] = colOID
+		body["author"] = string(raw)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+	// When a task is moved between columns, stamp/clear completedAt so the
+	// planner's "Completed Today" stat stays accurate. A column counts as Done
+	// when its name is "done" (case-insensitive) — the same convention used by
+	// the project board stats.
+	if colID, ok := body["columnId"].(string); ok && colID != "" {
+		var col models.Column
+		if err := db.DB.Where("id = ?", colID).First(&col).Error; err == nil {
+			if strings.EqualFold(col.Name, "done") {
+				body["completedAt"] = time.Now()
+			} else {
+				body["completedAt"] = nil
+			}
+		}
+	}
 
-	result, err := db.Collection("todos").UpdateOne(
-		ctx,
-		bson.M{"_id": id},
-		bson.M{"$set": body},
-	)
-	if err != nil || result.MatchedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Todo not found", err)
+	result := db.DB.Model(&models.Todo{}).Where("id = ?", id).Updates(body)
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Todo not found", result.Error)
 		return
 	}
 
@@ -82,18 +90,15 @@ func UpdateTodo(c *gin.Context) {
 }
 
 func DeleteTodo(c *gin.Context) {
-	id, err := primitive.ObjectIDFromHex(c.Param("id"))
-	if err != nil {
+	id := c.Param("id")
+	if _, err := uuid.Parse(id); err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid todo ID", err)
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	result, err := db.Collection("todos").DeleteOne(ctx, bson.M{"_id": id})
-	if err != nil || result.DeletedCount == 0 {
-		utils.Err(c, http.StatusNotFound, "Todo not found", err)
+	result := db.DB.Where("id = ?", id).Delete(&models.Todo{})
+	if result.Error != nil || result.RowsAffected == 0 {
+		utils.Err(c, http.StatusNotFound, "Todo not found", result.Error)
 		return
 	}
 
