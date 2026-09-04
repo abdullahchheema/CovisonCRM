@@ -69,6 +69,7 @@ export function ContactsTable({
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [tagFilter, setTagFilter] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -82,6 +83,9 @@ export function ContactsTable({
     return contacts.filter((contact) => {
       if (onlyMine && contact.owner_id !== currentUserId) return false;
       if (status && contact.status !== status) return false;
+      if (tagFilter && !(tagsByContactId[contact.id] ?? []).some((tag) => tag.id === tagFilter)) {
+        return false;
+      }
       if (!term) return true;
       return (
         contact.name.toLowerCase().includes(term) ||
@@ -89,7 +93,7 @@ export function ContactsTable({
         (contact.job_title ?? "").toLowerCase().includes(term)
       );
     });
-  }, [contacts, search, status, onlyMine, currentUserId]);
+  }, [contacts, search, status, tagFilter, tagsByContactId, onlyMine, currentUserId]);
 
   const allVisibleSelected =
     filtered.length > 0 && filtered.every((contact) => selected.has(contact.id));
@@ -165,13 +169,14 @@ export function ContactsTable({
   };
 
   const exportCsv = () => {
-    const header = ["Name", "Email", "Phone", "Job title", "Status", "Company", "Owner"];
+    const header = ["Name", "Email", "Phone", "Job title", "Status", "Tags", "Company", "Owner"];
     const rows = filtered.map((contact) => [
       contact.name,
       contact.email ?? "",
       contact.phone ?? "",
       contact.job_title ?? "",
       STATUS_LABELS[contact.status] ?? contact.status,
+      (tagsByContactId[contact.id] ?? []).map((tag) => tag.name).join("; "),
       contact.company_id ? (companyNameById[contact.company_id] ?? "") : "",
       contact.owner_id ? (ownerNameById[contact.owner_id] ?? "") : "",
     ]);
@@ -205,6 +210,18 @@ export function ContactsTable({
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
             <option key={value} value={value}>
               {label}
+            </option>
+          ))}
+        </Select>
+        <Select
+          value={tagFilter}
+          onChange={(e) => setTagFilter(e.target.value)}
+          className="max-w-40"
+        >
+          <option value="">All tags</option>
+          {tags.map((tag) => (
+            <option key={tag.id} value={tag.id}>
+              {tag.name}
             </option>
           ))}
         </Select>
