@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/*
+ * Design system: "Graphite / Paper / Cobalt" — see the migration plan.
+ * Deliberately restrained: no gradients, no glow shadows, moderate radii.
+ * Dark mode is class-based (.dark on <html>), ready for next-themes —
+ * NOT a prefers-color-scheme media query, so a manual toggle can override
+ * the system preference once one exists.
+ */
+
+:root {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --muted: #f0f2f5;
+  --foreground: #111827;
+  --muted-foreground: #667085;
+  --border: #e4e7ec;
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+  --success: #16a66a;
+  --warning: #d99000;
+  --danger: #d92d20;
+  --danger-foreground: #ffffff;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #0b0d10;
+  --surface: #11151a;
+  --muted: #181d23;
+  --foreground: #f3f4f6;
+  --muted-foreground: #98a2b3;
+  --border: #252b33;
+  --primary: #5b8def;
+  --primary-foreground: #0b0d10;
+  --success: #39c58a;
+  --warning: #f0b44d;
+  --danger: #f97066;
+  --danger-foreground: #0b0d10;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --radius-DEFAULT: var(--radius);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
