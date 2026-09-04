@@ -22,14 +22,16 @@ interface ContactRow {
   job_title: string | null;
   status: string;
   company_id: string | null;
+  owner_id: string | null;
 }
 
 interface ContactsTableProps {
   contacts: ContactRow[];
   companyNameById: Record<string, string>;
+  ownerNameById: Record<string, string>;
 }
 
-export function ContactsTable({ contacts, companyNameById }: ContactsTableProps) {
+export function ContactsTable({ contacts, companyNameById, ownerNameById }: ContactsTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
@@ -87,6 +89,7 @@ export function ContactsTable({ contacts, companyNameById }: ContactsTableProps)
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Job title</th>
                 <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
               </tr>
             </thead>
             <tbody>
@@ -112,6 +115,9 @@ export function ContactsTable({ contacts, companyNameById }: ContactsTableProps)
                     <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
                       {STATUS_LABELS[contact.status] ?? contact.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—"}
                   </td>
                 </tr>
               ))}

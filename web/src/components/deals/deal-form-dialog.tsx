@@ -27,6 +27,7 @@ const dealSchema = z.object({
   stage_id: z.string().min(1, "Pick a stage"),
   contact_id: z.string().optional(),
   company_id: z.string().optional(),
+  owner_id: z.string().optional(),
 });
 
 // z.coerce.number() makes the schema's input type (string, from the <input>)
@@ -42,6 +43,7 @@ interface DealFormDialogProps {
   stages: { id: string; name: string }[];
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
 }
 
 export function DealFormDialog({
@@ -50,6 +52,7 @@ export function DealFormDialog({
   stages,
   contacts,
   companies,
+  members,
 }: DealFormDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -73,6 +76,7 @@ export function DealFormDialog({
       value: values.value ?? 0,
       contact_id: values.contact_id || null,
       company_id: values.company_id || null,
+      owner_id: values.owner_id || null,
     });
 
     if (error) {
@@ -135,6 +139,17 @@ export function DealFormDialog({
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
                 </option>
               ))}
             </Select>

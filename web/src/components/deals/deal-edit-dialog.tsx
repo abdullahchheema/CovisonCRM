@@ -27,6 +27,7 @@ const dealSchema = z.object({
   value: z.coerce.number().min(0).optional(),
   contact_id: z.string().optional(),
   company_id: z.string().optional(),
+  owner_id: z.string().optional(),
 });
 
 type DealFormInput = z.input<typeof dealSchema>;
@@ -39,12 +40,14 @@ interface DealEditDialogProps {
     value: number;
     contact_id: string | null;
     company_id: string | null;
+    owner_id: string | null;
   };
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
 }
 
-export function DealEditDialog({ deal, contacts, companies }: DealEditDialogProps) {
+export function DealEditDialog({ deal, contacts, companies, members }: DealEditDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const {
@@ -58,6 +61,7 @@ export function DealEditDialog({ deal, contacts, companies }: DealEditDialogProp
       value: deal.value,
       contact_id: deal.contact_id ?? "",
       company_id: deal.company_id ?? "",
+      owner_id: deal.owner_id ?? "",
     },
   });
 
@@ -70,6 +74,7 @@ export function DealEditDialog({ deal, contacts, companies }: DealEditDialogProp
         value: values.value ?? 0,
         contact_id: values.contact_id || null,
         company_id: values.company_id || null,
+        owner_id: values.owner_id || null,
       })
       .eq("id", deal.id);
 
@@ -128,6 +133,17 @@ export function DealEditDialog({ deal, contacts, companies }: DealEditDialogProp
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
                 </option>
               ))}
             </Select>

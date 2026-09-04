@@ -18,14 +18,16 @@ interface DealCardProps {
     stage_id: string;
     contact_id: string | null;
     company_id: string | null;
+    owner_id: string | null;
   };
   stages: { id: string; name: string }[];
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
   contactName: string | null;
 }
 
-export function DealCard({ deal, stages, contacts, companies, contactName }: DealCardProps) {
+export function DealCard({ deal, stages, contacts, companies, members, contactName }: DealCardProps) {
   const router = useRouter();
 
   const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -69,7 +71,7 @@ export function DealCard({ deal, stages, contacts, companies, contactName }: Dea
             </option>
           ))}
         </Select>
-        <DealEditDialog deal={deal} contacts={contacts} companies={companies} />
+        <DealEditDialog deal={deal} contacts={contacts} companies={companies} members={members} />
         <SoftDeleteButton table="deals" id={deal.id} label="Deal" />
       </div>
     </div>

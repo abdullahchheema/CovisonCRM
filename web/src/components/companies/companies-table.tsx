@@ -11,9 +11,15 @@ interface CompanyRow {
   domain: string | null;
   phone: string | null;
   industry: string | null;
+  owner_id: string | null;
 }
 
-export function CompaniesTable({ companies }: { companies: CompanyRow[] }) {
+interface CompaniesTableProps {
+  companies: CompanyRow[];
+  ownerNameById: Record<string, string>;
+}
+
+export function CompaniesTable({ companies, ownerNameById }: CompaniesTableProps) {
   const [search, setSearch] = useState("");
 
   const filtered = useMemo(() => {
@@ -55,6 +61,7 @@ export function CompaniesTable({ companies }: { companies: CompanyRow[] }) {
                 <th className="px-4 py-3 font-medium">Domain</th>
                 <th className="px-4 py-3 font-medium">Phone</th>
                 <th className="px-4 py-3 font-medium">Industry</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
               </tr>
             </thead>
             <tbody>
@@ -73,6 +80,9 @@ export function CompaniesTable({ companies }: { companies: CompanyRow[] }) {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">
                     {company.industry ?? "—"}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">
+                    {company.owner_id ? (ownerNameById[company.owner_id] ?? "—") : "—"}
                   </td>
                 </tr>
               ))}

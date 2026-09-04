@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -28,12 +29,18 @@ const companySchema = z.object({
   website: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   industry: z.string().trim().optional(),
+  owner_id: z.string().optional(),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;
 type Company = Database["public"]["Tables"]["companies"]["Row"];
 
-export function CompanyEditDialog({ company }: { company: Company }) {
+interface CompanyEditDialogProps {
+  company: Company;
+  members: { id: string; name: string }[];
+}
+
+export function CompanyEditDialog({ company, members }: CompanyEditDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const {
@@ -48,6 +55,7 @@ export function CompanyEditDialog({ company }: { company: Company }) {
       website: company.website ?? "",
       phone: company.phone ?? "",
       industry: company.industry ?? "",
+      owner_id: company.owner_id ?? "",
     },
   });
 
@@ -61,6 +69,7 @@ export function CompanyEditDialog({ company }: { company: Company }) {
         website: values.website || null,
         phone: values.phone || null,
         industry: values.industry || null,
+        owner_id: values.owner_id || null,
       })
       .eq("id", company.id);
 
@@ -108,6 +117,17 @@ export function CompanyEditDialog({ company }: { company: Company }) {
           <div className="grid gap-2">
             <Label htmlFor="industry">Industry</Label>
             <Input id="industry" {...register("industry")} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </Select>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

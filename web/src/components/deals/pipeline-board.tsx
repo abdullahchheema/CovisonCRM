@@ -24,6 +24,7 @@ interface Deal {
   stage_id: string;
   contact_id: string | null;
   company_id: string | null;
+  owner_id: string | null;
 }
 
 interface PipelineBoardProps {
@@ -31,6 +32,7 @@ interface PipelineBoardProps {
   initialDeals: Deal[];
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
 }
 
 function DraggableCard({
@@ -38,12 +40,14 @@ function DraggableCard({
   stages,
   contacts,
   companies,
+  members,
   contactName,
 }: {
   deal: Deal;
   stages: { id: string; name: string }[];
   contacts: { id: string; name: string }[];
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
   contactName: string | null;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -58,7 +62,7 @@ function DraggableCard({
       {...listeners}
       {...attributes}
     >
-      <DealCard deal={deal} stages={stages} contacts={contacts} companies={companies} contactName={contactName} />
+      <DealCard deal={deal} stages={stages} contacts={contacts} companies={companies} members={members} contactName={contactName} />
     </div>
   );
 }
@@ -89,6 +93,7 @@ export function PipelineBoard({
   initialDeals,
   contacts,
   companies,
+  members,
 }: PipelineBoardProps) {
   const [deals, setDeals] = useState(initialDeals);
 
@@ -175,6 +180,7 @@ export function PipelineBoard({
                   stages={stages}
                   contacts={contacts}
                   companies={companies}
+                  members={members}
                   contactName={deal.contact_id ? (contactNameById.get(deal.contact_id) ?? null) : null}
                 />
               ))}

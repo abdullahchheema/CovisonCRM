@@ -1,26 +1,34 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { CompanyFormDialog } from "@/components/companies/company-form-dialog";
 import { CompaniesTable } from "@/components/companies/companies-table";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function CompaniesPage() {
   const { supabase, org } = await requireOrgContext();
 
-  const { data: companies, error } = await supabase
-    .from("companies")
-    .select("id, name, domain, website, phone, industry, created_at")
-    .is("deleted_at", null)
-    .order("created_at", { ascending: false });
+  const [{ data: companies, error }, members] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("id, name, domain, website, phone, industry, owner_id, created_at")
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    getOrgMemberOptions(supabase),
+  ]);
+
+  const ownerNameById = Object.fromEntries(members.map((m) => [m.id, m.name]));
 
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-foreground">Companies</h1>
-        <CompanyFormDialog organizationId={org.id} />
+        <CompanyFormDialog organizationId={org.id} members={members} />
       </div>
 
       {error && <p className="text-sm text-danger">{error.message}</p>}
 
-      {!error && <CompaniesTable companies={companies ?? []} />}
+      {!error && (
+        <CompaniesTable companies={companies ?? []} ownerNameById={ownerNameById} />
+      )}
     </div>
   );
 }

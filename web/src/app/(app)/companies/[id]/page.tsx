@@ -5,6 +5,7 @@ import { CompanyEditDialog } from "@/components/companies/company-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function CompanyDetailPage({
   params,
@@ -25,7 +26,7 @@ export default async function CompanyDetailPage({
     notFound();
   }
 
-  const [{ data: contacts }, { data: activityRows }] = await Promise.all([
+  const [{ data: contacts }, { data: activityRows }, members] = await Promise.all([
     supabase
       .from("contacts")
       .select("id, name, email, status")
@@ -38,6 +39,7 @@ export default async function CompanyDetailPage({
       .eq("company_id", id)
       .is("deleted_at", null)
       .order("occurred_at", { ascending: false }),
+    getOrgMemberOptions(supabase),
   ]);
 
   const actorIds = [
@@ -48,6 +50,9 @@ export default async function CompanyDetailPage({
       ? await supabase.from("profiles").select("id, email").in("id", actorIds)
       : { data: [] as { id: string; email: string }[] };
   const actorEmailById = new Map((actorProfiles ?? []).map((p) => [p.id, p.email]));
+  const ownerName = company.owner_id
+    ? members.find((m) => m.id === company.owner_id)?.name
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -59,7 +64,7 @@ export default async function CompanyDetailPage({
           )}
         </div>
         <div className="flex gap-2">
-          <CompanyEditDialog company={company} />
+          <CompanyEditDialog company={company} members={members} />
           <SoftDeleteButton
             table="companies"
             id={company.id}
@@ -83,6 +88,10 @@ export default async function CompanyDetailPage({
           <div className="flex justify-between gap-4">
             <dt className="text-muted-foreground">Industry</dt>
             <dd className="text-foreground">{company.industry ?? "—"}</dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Owner</dt>
+            <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
           </div>
         </dl>
       </div>

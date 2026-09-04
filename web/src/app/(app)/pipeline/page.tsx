@@ -1,6 +1,7 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { DealFormDialog } from "@/components/deals/deal-form-dialog";
 import { PipelineBoard } from "@/components/deals/pipeline-board";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function PipelinePage() {
   const { supabase, org } = await requireOrgContext();
@@ -20,7 +21,7 @@ export default async function PipelinePage() {
     );
   }
 
-  const [{ data: stages }, { data: deals }, { data: contacts }, { data: companies }] =
+  const [{ data: stages }, { data: deals }, { data: contacts }, { data: companies }, members] =
     await Promise.all([
       supabase
         .from("pipeline_stages")
@@ -29,12 +30,13 @@ export default async function PipelinePage() {
         .order("position"),
       supabase
         .from("deals")
-        .select("id, name, value, currency, stage_id, contact_id, company_id")
+        .select("id, name, value, currency, stage_id, contact_id, company_id, owner_id")
         .eq("pipeline_id", pipeline.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
       supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
+      getOrgMemberOptions(supabase),
     ]);
 
   const stageList = stages ?? [];
@@ -59,6 +61,7 @@ export default async function PipelinePage() {
           stages={stageList}
           contacts={contacts ?? []}
           companies={companies ?? []}
+          members={members}
         />
       </div>
 
@@ -67,6 +70,7 @@ export default async function PipelinePage() {
         initialDeals={deals ?? []}
         contacts={contacts ?? []}
         companies={companies ?? []}
+        members={members}
       />
     </div>
   );

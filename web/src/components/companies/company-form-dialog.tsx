@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 
 const companySchema = z.object({
@@ -26,11 +27,17 @@ const companySchema = z.object({
   website: z.string().trim().optional(),
   phone: z.string().trim().optional(),
   industry: z.string().trim().optional(),
+  owner_id: z.string().optional(),
 });
 
 type CompanyFormValues = z.infer<typeof companySchema>;
 
-export function CompanyFormDialog({ organizationId }: { organizationId: string }) {
+interface CompanyFormDialogProps {
+  organizationId: string;
+  members: { id: string; name: string }[];
+}
+
+export function CompanyFormDialog({ organizationId, members }: CompanyFormDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const {
@@ -49,6 +56,7 @@ export function CompanyFormDialog({ organizationId }: { organizationId: string }
       website: values.website || null,
       phone: values.phone || null,
       industry: values.industry || null,
+      owner_id: values.owner_id || null,
     });
 
     if (error) {
@@ -94,6 +102,17 @@ export function CompanyFormDialog({ organizationId }: { organizationId: string }
           <div className="grid gap-2">
             <Label htmlFor="industry">Industry</Label>
             <Input id="industry" {...register("industry")} />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
+                </option>
+              ))}
+            </Select>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

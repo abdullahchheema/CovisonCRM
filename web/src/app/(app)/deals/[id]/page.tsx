@@ -5,6 +5,7 @@ import { DealEditDialog } from "@/components/deals/deal-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function DealDetailPage({
   params,
@@ -30,6 +31,7 @@ export default async function DealDetailPage({
     { data: contacts },
     { data: companies },
     { data: activityRows },
+    members,
   ] = await Promise.all([
     supabase.from("pipeline_stages").select("name").eq("id", deal.stage_id).single(),
     supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
@@ -40,6 +42,7 @@ export default async function DealDetailPage({
       .eq("deal_id", id)
       .is("deleted_at", null)
       .order("occurred_at", { ascending: false }),
+    getOrgMemberOptions(supabase),
   ]);
 
   const actorIds = [
@@ -57,6 +60,9 @@ export default async function DealDetailPage({
   const companyName = deal.company_id
     ? (companies ?? []).find((c) => c.id === deal.company_id)?.name
     : null;
+  const ownerName = deal.owner_id
+    ? members.find((m) => m.id === deal.owner_id)?.name
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -66,7 +72,7 @@ export default async function DealDetailPage({
           <p className="text-sm text-muted-foreground">{stage?.name ?? "—"}</p>
         </div>
         <div className="flex gap-2">
-          <DealEditDialog deal={deal} contacts={contacts ?? []} companies={companies ?? []} />
+          <DealEditDialog deal={deal} contacts={contacts ?? []} companies={companies ?? []} members={members} />
           <SoftDeleteButton table="deals" id={deal.id} label="Deal" redirectTo="/pipeline" />
         </div>
       </div>
@@ -106,6 +112,10 @@ export default async function DealDetailPage({
                 "—"
               )}
             </dd>
+          </div>
+          <div className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">Owner</dt>
+            <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
           </div>
           {deal.description && (
             <div className="flex justify-between gap-4">

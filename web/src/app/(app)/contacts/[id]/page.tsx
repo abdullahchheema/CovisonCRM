@@ -5,6 +5,7 @@ import { ContactTagManager } from "@/components/contacts/contact-tag-manager";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function ContactDetailPage({
   params,
@@ -30,6 +31,7 @@ export default async function ContactDetailPage({
     { data: allTags },
     { data: assignedTagRows },
     { data: activityRows },
+    members,
   ] = await Promise.all([
     supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
     supabase.from("tags").select("id, name, color").is("deleted_at", null).order("name"),
@@ -40,6 +42,7 @@ export default async function ContactDetailPage({
       .eq("contact_id", id)
       .is("deleted_at", null)
       .order("occurred_at", { ascending: false }),
+    getOrgMemberOptions(supabase),
   ]);
 
   const actorIds = [
@@ -54,6 +57,9 @@ export default async function ContactDetailPage({
   const companyName = contact.company_id
     ? (companies ?? []).find((c) => c.id === contact.company_id)?.name
     : null;
+  const ownerName = contact.owner_id
+    ? members.find((m) => m.id === contact.owner_id)?.name
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -65,7 +71,7 @@ export default async function ContactDetailPage({
           )}
         </div>
         <div className="flex gap-2">
-          <ContactEditDialog contact={contact} companies={companies ?? []} />
+          <ContactEditDialog contact={contact} companies={companies ?? []} members={members} />
           <SoftDeleteButton
             table="contacts"
             id={contact.id}
@@ -94,6 +100,10 @@ export default async function ContactDetailPage({
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Status</dt>
               <dd className="text-foreground capitalize">{contact.status}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Owner</dt>
+              <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
             </div>
           </dl>
         </div>

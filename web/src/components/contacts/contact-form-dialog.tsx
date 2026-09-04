@@ -36,6 +36,7 @@ const contactSchema = z.object({
   job_title: z.string().trim().optional(),
   status: z.string(),
   company_id: z.string().optional(),
+  owner_id: z.string().optional(),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;
@@ -43,11 +44,13 @@ type ContactFormValues = z.infer<typeof contactSchema>;
 interface ContactFormDialogProps {
   organizationId: string;
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
 }
 
 export function ContactFormDialog({
   organizationId,
   companies,
+  members,
 }: ContactFormDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -71,6 +74,7 @@ export function ContactFormDialog({
       job_title: values.job_title || null,
       status: values.status,
       company_id: values.company_id || null,
+      owner_id: values.owner_id || null,
     });
 
     if (error) {
@@ -123,6 +127,17 @@ export function ContactFormDialog({
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
                 </option>
               ))}
             </Select>

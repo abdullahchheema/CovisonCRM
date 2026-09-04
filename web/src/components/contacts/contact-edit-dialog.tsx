@@ -38,6 +38,7 @@ const contactSchema = z.object({
   job_title: z.string().trim().optional(),
   status: z.string(),
   company_id: z.string().optional(),
+  owner_id: z.string().optional(),
 });
 
 type ContactFormValues = z.infer<typeof contactSchema>;
@@ -46,9 +47,10 @@ type Contact = Database["public"]["Tables"]["contacts"]["Row"];
 interface ContactEditDialogProps {
   contact: Contact;
   companies: { id: string; name: string }[];
+  members: { id: string; name: string }[];
 }
 
-export function ContactEditDialog({ contact, companies }: ContactEditDialogProps) {
+export function ContactEditDialog({ contact, companies, members }: ContactEditDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const {
@@ -64,6 +66,7 @@ export function ContactEditDialog({ contact, companies }: ContactEditDialogProps
       job_title: contact.job_title ?? "",
       status: contact.status,
       company_id: contact.company_id ?? "",
+      owner_id: contact.owner_id ?? "",
     },
   });
 
@@ -78,6 +81,7 @@ export function ContactEditDialog({ contact, companies }: ContactEditDialogProps
         job_title: values.job_title || null,
         status: values.status,
         company_id: values.company_id || null,
+        owner_id: values.owner_id || null,
       })
       .eq("id", contact.id);
 
@@ -132,6 +136,17 @@ export function ContactEditDialog({ contact, companies }: ContactEditDialogProps
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>
                   {company.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="owner_id">Owner</Label>
+            <Select id="owner_id" {...register("owner_id")}>
+              <option value="">Unassigned</option>
+              {members.map((member) => (
+                <option key={member.id} value={member.id}>
+                  {member.name}
                 </option>
               ))}
             </Select>
