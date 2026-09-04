@@ -1,9 +1,10 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 import { RevokeInvitationButton } from "@/components/team/revoke-invitation-button";
+import { MemberRow } from "@/components/team/member-row";
 
 export default async function TeamPage() {
-  const { supabase, org } = await requireOrgContext();
+  const { supabase, org, profile } = await requireOrgContext();
 
   const [{ data: members, error: membersError }, { data: invitations }] = await Promise.all([
     supabase
@@ -40,19 +41,17 @@ export default async function TeamPage() {
         </h2>
         <ul className="flex flex-col gap-2">
           {(members ?? []).map((member) => {
-            const profile = profileById.get(member.user_id);
+            const memberProfile = profileById.get(member.user_id);
             return (
-              <li
+              <MemberRow
                 key={member.id}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="text-foreground">
-                  {profile?.full_name || profile?.email || member.user_id}
-                </span>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-foreground">
-                  {member.role}
-                </span>
-              </li>
+                membershipId={member.id}
+                displayName={
+                  memberProfile?.full_name || memberProfile?.email || member.user_id
+                }
+                role={member.role}
+                isSelf={member.user_id === profile.id}
+              />
             );
           })}
         </ul>
