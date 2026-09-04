@@ -29,7 +29,7 @@ export default async function PipelinePage() {
         .order("position"),
       supabase
         .from("deals")
-        .select("id, name, value, currency, stage_id, contact_id")
+        .select("id, name, value, currency, stage_id, contact_id, company_id")
         .eq("pipeline_id", pipeline.id)
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
@@ -87,6 +87,8 @@ export default async function PipelinePage() {
                   key={deal.id}
                   deal={deal}
                   stages={stageList}
+                  contacts={contacts ?? []}
+                  companies={companies ?? []}
                   contactName={deal.contact_id ? (contactNameById.get(deal.contact_id) ?? null) : null}
                 />
               ))}

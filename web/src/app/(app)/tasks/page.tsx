@@ -46,6 +46,7 @@ export default async function TasksPage() {
             <TaskRow
               key={task.id}
               task={task}
+              contacts={contacts ?? []}
               contactName={task.contact_id ? (contactNameById.get(task.contact_id) ?? null) : null}
             />
           ))}
@@ -60,6 +61,7 @@ export default async function TasksPage() {
               <TaskRow
                 key={task.id}
                 task={task}
+                contacts={contacts ?? []}
                 contactName={task.contact_id ? (contactNameById.get(task.contact_id) ?? null) : null}
               />
             ))}

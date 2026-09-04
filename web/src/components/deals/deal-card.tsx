@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { Select } from "@/components/ui/select";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
+import { DealEditDialog } from "@/components/deals/deal-edit-dialog";
 import { createClient } from "@/lib/supabase/client";
 
 interface DealCardProps {
@@ -16,12 +17,15 @@ interface DealCardProps {
     currency: string;
     stage_id: string;
     contact_id: string | null;
+    company_id: string | null;
   };
   stages: { id: string; name: string }[];
+  contacts: { id: string; name: string }[];
+  companies: { id: string; name: string }[];
   contactName: string | null;
 }
 
-export function DealCard({ deal, stages, contactName }: DealCardProps) {
+export function DealCard({ deal, stages, contacts, companies, contactName }: DealCardProps) {
   const router = useRouter();
 
   const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -63,6 +67,7 @@ export function DealCard({ deal, stages, contactName }: DealCardProps) {
             </option>
           ))}
         </Select>
+        <DealEditDialog deal={deal} contacts={contacts} companies={companies} />
         <SoftDeleteButton table="deals" id={deal.id} label="Deal" />
       </div>
     </div>

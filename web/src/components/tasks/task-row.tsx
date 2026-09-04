@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
+import { TaskEditDialog } from "@/components/tasks/task-edit-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -17,10 +18,11 @@ interface TaskRowProps {
     due_at: string | null;
     contact_id: string | null;
   };
+  contacts: { id: string; name: string }[];
   contactName: string | null;
 }
 
-export function TaskRow({ task, contactName }: TaskRowProps) {
+export function TaskRow({ task, contacts, contactName }: TaskRowProps) {
   const router = useRouter();
   const isDone = task.status === "completed";
 
@@ -65,7 +67,10 @@ export function TaskRow({ task, contactName }: TaskRowProps) {
           </div>
         </div>
       </div>
-      <SoftDeleteButton table="tasks" id={task.id} label="Task" />
+      <div className="flex items-center gap-1">
+        <TaskEditDialog task={task} contacts={contacts} />
+        <SoftDeleteButton table="tasks" id={task.id} label="Task" />
+      </div>
     </li>
   );
 }
