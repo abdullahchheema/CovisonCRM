@@ -21,13 +21,37 @@ export default async function AppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { org, profile } = await requireOrgContext();
+  const { org, profile, supabase } = await requireOrgContext();
+
+  // Same signed-URL pattern as settings/page.tsx: logo_url isn't part of
+  // requireOrgContext()'s selection since most pages don't need it.
+  const { data: orgWithLogo } = await supabase
+    .from("organizations")
+    .select("logo_url")
+    .eq("id", org.id)
+    .single();
+
+  let logoSignedUrl: string | null = null;
+  if (orgWithLogo?.logo_url) {
+    const { data: signed } = await supabase.storage
+      .from("org-files")
+      .createSignedUrl(orgWithLogo.logo_url, 3600);
+    logoSignedUrl = signed?.signedUrl ?? null;
+  }
 
   return (
     <div className="flex min-h-svh w-full">
       <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-surface p-4">
-        <div className="mb-6 truncate font-semibold text-foreground">
-          {org.name}
+        <div className="mb-6 flex items-center gap-2 truncate font-semibold text-foreground">
+          {logoSignedUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- signed Supabase Storage URL, not a static asset
+            <img
+              src={logoSignedUrl}
+              alt=""
+              className="size-6 shrink-0 rounded object-cover"
+            />
+          ) : null}
+          <span className="truncate">{org.name}</span>
         </div>
         <nav className="flex flex-col gap-1 text-sm">
           {NAV_ITEMS.map((item) => (
