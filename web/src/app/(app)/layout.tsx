@@ -1,6 +1,7 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { LogoutButton } from "@/components/logout-button";
 import { CommandPalette } from "@/components/command-palette";
+import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
 const NAV_ITEMS = [
@@ -44,6 +45,7 @@ export default async function AppLayout({
             <span className="text-sm text-muted-foreground">
               {profile.email}
             </span>
+            <ThemeToggle />
             <LogoutButton />
           </div>
         </header>
