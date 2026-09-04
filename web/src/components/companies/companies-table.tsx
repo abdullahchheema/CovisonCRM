@@ -3,7 +3,12 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+
+function toCsvValue(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
 
 interface CompanyRow {
   id: string;
@@ -41,6 +46,27 @@ export function CompaniesTable({
     });
   }, [companies, search, onlyMine, currentUserId]);
 
+  const exportCsv = () => {
+    const header = ["Name", "Domain", "Phone", "Industry", "Owner"];
+    const rows = filtered.map((company) => [
+      company.name,
+      company.domain ?? "",
+      company.phone ?? "",
+      company.industry ?? "",
+      company.owner_id ? (ownerNameById[company.owner_id] ?? "") : "",
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map(toCsvValue).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `companies-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div className="mb-4 flex gap-2">
@@ -59,6 +85,9 @@ export function CompaniesTable({
           />
           Only mine
         </label>
+        <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
+          Export CSV
+        </Button>
       </div>
 
       {filtered.length === 0 ? (

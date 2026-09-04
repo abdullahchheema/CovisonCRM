@@ -3,8 +3,13 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+
+function toCsvValue(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
 
 const STATUS_LABELS: Record<string, string> = {
   new: "New",
@@ -56,6 +61,29 @@ export function ContactsTable({
     });
   }, [contacts, search, status, onlyMine, currentUserId]);
 
+  const exportCsv = () => {
+    const header = ["Name", "Email", "Phone", "Job title", "Status", "Company", "Owner"];
+    const rows = filtered.map((contact) => [
+      contact.name,
+      contact.email ?? "",
+      contact.phone ?? "",
+      contact.job_title ?? "",
+      STATUS_LABELS[contact.status] ?? contact.status,
+      contact.company_id ? (companyNameById[contact.company_id] ?? "") : "",
+      contact.owner_id ? (ownerNameById[contact.owner_id] ?? "") : "",
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map(toCsvValue).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div>
       <div className="mb-4 flex gap-2">
@@ -86,6 +114,9 @@ export function ContactsTable({
           />
           Only mine
         </label>
+        <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
+          Export CSV
+        </Button>
       </div>
 
       {filtered.length === 0 ? (
