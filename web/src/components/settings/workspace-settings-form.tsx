@@ -3,6 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -28,12 +29,16 @@ export function WorkspaceSettingsForm({
   organizationId,
   name,
   slug,
+  logoSignedUrl,
 }: {
   organizationId: string;
   name: string;
   slug: string;
+  logoSignedUrl: string | null;
 }) {
   const router = useRouter();
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const {
     register,
     handleSubmit,
@@ -73,6 +78,53 @@ export function WorkspaceSettingsForm({
     router.refresh();
   };
 
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingLogo(true);
+    const supabase = createClient();
+
+    // Fixed path per org (upsert:true) rather than a unique filename per
+    // upload — keeps exactly one logo object per workspace instead of
+    // accumulating orphaned files with no cleanup path. The
+    // org_files_insert/update RLS policies (015_storage.sql) require this
+    // path's first segment to equal the caller's current_org_id() —
+    // verified directly against Postgres, including that a mismatched org
+    // id is rejected and a different org can't see this one's object.
+    const path = `${organizationId}/logo/current`;
+    const { error: uploadError } = await supabase.storage
+      .from("org-files")
+      .upload(path, file, { upsert: true, contentType: file.type });
+
+    if (uploadError) {
+      toast.error(uploadError.message);
+      setIsUploadingLogo(false);
+      return;
+    }
+
+    const { error: updateError } = await supabase
+      .from("organizations")
+      .update({ logo_url: path })
+      .eq("id", organizationId)
+      .select()
+      .single();
+
+    setIsUploadingLogo(false);
+
+    if (updateError) {
+      toast.error(
+        updateError.code === "PGRST116"
+          ? "Only workspace owners and admins can change the logo."
+          : updateError.message,
+      );
+      return;
+    }
+
+    toast.success("Logo updated");
+    router.refresh();
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -80,6 +132,37 @@ export function WorkspaceSettingsForm({
         <CardDescription>/{slug}</CardDescription>
       </CardHeader>
       <CardContent>
+        <div className="mb-6 flex items-center gap-4">
+          {logoSignedUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element -- see file-top note
+            <img
+              src={logoSignedUrl}
+              alt="Workspace logo"
+              className="size-12 rounded-lg border border-border object-cover"
+            />
+          ) : (
+            <div className="flex size-12 items-center justify-center rounded-lg border border-border bg-muted text-xs text-muted-foreground">
+              No logo
+            </div>
+          )}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/png,image/jpeg,image/webp,image/svg+xml"
+            className="hidden"
+            onChange={handleLogoChange}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            disabled={isUploadingLogo}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {isUploadingLogo ? "Uploading..." : "Change logo"}
+          </Button>
+        </div>
+
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div className="grid gap-2">
             <Label htmlFor="name">Workspace name</Label>
