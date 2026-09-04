@@ -11,7 +11,7 @@ type User struct {
 	Name        string             `bson:"name" json:"name"`
 	Email       string             `bson:"email" json:"email"`
 	Password    string             `bson:"password" json:"password,omitempty"`
-	Token       string             `bson:"token,omitempty" json:"token,omitempty"`
+	Token       string             `bson:"token,omitempty" json:"-"`
 	Permissions []string           `bson:"permissions" json:"permissions"`
 	Verified    bool               `bson:"verified" json:"verified"`
 	Date        time.Time          `bson:"date" json:"date"`

@@ -14,7 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"golang.org/x/crypto/bcrypt"
+	"slices"
 )
+
+// hasPermission mirrors the frontend's usePermissions().has(): "admin" is a
+// superset that satisfies any check, otherwise the specific permission must
+// be present. User-management endpoints (create/update/delete) require it —
+// without this check, any authenticated user, regardless of their own
+// permission level, could create or promote accounts (including to admin)
+// within their company.
+func hasPermission(u models.User, permission string) bool {
+	return slices.Contains(u.Permissions, "admin") || slices.Contains(u.Permissions, permission)
+}
 
 func GetUsers(c *gin.Context) {
 	currentUser := c.MustGet("user").(models.User)
@@ -55,6 +66,8 @@ type createUserInput struct {
 }
 
 func GetUser(c *gin.Context) {
+	currentUser := c.MustGet("user").(models.User)
+
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
@@ -65,7 +78,7 @@ func GetUser(c *gin.Context) {
 	defer cancel()
 
 	var user models.User
-	if err = db.Collection("users").FindOne(ctx, bson.M{"_id": id}).Decode(&user); err != nil {
+	if err = db.Collection("users").FindOne(ctx, bson.M{"_id": id, "companyId": currentUser.CompanyID}).Decode(&user); err != nil {
 		utils.Err(c, http.StatusNotFound, "User not found", err)
 		return
 	}
@@ -81,6 +94,12 @@ type updateUserInput struct {
 }
 
 func UpdateUser(c *gin.Context) {
+	currentUser := c.MustGet("user").(models.User)
+	if !hasPermission(currentUser, "users-edit") {
+		utils.Err(c, http.StatusForbidden, "You do not have permission to update users")
+		return
+	}
+
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
@@ -102,7 +121,7 @@ func UpdateUser(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := db.Collection("users").UpdateOne(ctx, bson.M{"_id": id}, update)
+	result, err := db.Collection("users").UpdateOne(ctx, bson.M{"_id": id, "companyId": currentUser.CompanyID}, update)
 	if err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to update user", err)
 		return
@@ -119,6 +138,12 @@ func UpdateUser(c *gin.Context) {
 }
 
 func DeleteUser(c *gin.Context) {
+	currentUser := c.MustGet("user").(models.User)
+	if !hasPermission(currentUser, "users-delete") {
+		utils.Err(c, http.StatusForbidden, "You do not have permission to delete users")
+		return
+	}
+
 	id, err := primitive.ObjectIDFromHex(c.Param("id"))
 	if err != nil {
 		utils.Err(c, http.StatusBadRequest, "Invalid user ID", err)
@@ -128,7 +153,7 @@ func DeleteUser(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	result, err := db.Collection("users").DeleteOne(ctx, bson.M{"_id": id})
+	result, err := db.Collection("users").DeleteOne(ctx, bson.M{"_id": id, "companyId": currentUser.CompanyID})
 	if err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to delete user", err)
 		return
@@ -152,6 +177,10 @@ func CreateUser(c *gin.Context) {
 	defer cancel()
 
 	currentUser := c.MustGet("user").(models.User)
+	if !hasPermission(currentUser, "users-edit") {
+		utils.Err(c, http.StatusForbidden, "You do not have permission to create users")
+		return
+	}
 
 	var existing models.User
 	if err := db.Collection("users").FindOne(ctx, bson.M{"email": input.Email}).Decode(&existing); err == nil {

@@ -110,7 +110,7 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	encryptedEmail, err := utils.Encrypt(input.Email)
+	encryptedEmail, err := utils.EncryptWithExpiry(input.Email)
 	if err == nil {
 		frontendLink := os.Getenv("FRONTEND_LINK")
 		if frontendLink == "" {
@@ -190,9 +190,9 @@ func Login(c *gin.Context) {
 }
 
 func VerifyEmail(c *gin.Context) {
-	email, err := utils.Decrypt(c.Param("id"))
+	email, err := utils.DecryptWithExpiry(c.Param("id"), 24*time.Hour)
 	if err != nil {
-		utils.Err(c, http.StatusBadRequest, "Invalid verification link", err)
+		utils.Err(c, http.StatusBadRequest, "Invalid or expired verification link", err)
 		return
 	}
 
@@ -229,7 +229,7 @@ func ResendVerification(c *gin.Context) {
 		return
 	}
 
-	encryptedEmail, err := utils.Encrypt(input.Email)
+	encryptedEmail, err := utils.EncryptWithExpiry(input.Email)
 	if err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to generate verification link", err)
 		return
@@ -264,7 +264,7 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 
-	encryptedEmail, err := utils.Encrypt(input.Email)
+	encryptedEmail, err := utils.EncryptWithExpiry(input.Email)
 	if err != nil {
 		utils.Err(c, http.StatusInternalServerError, "Failed to generate reset link", err)
 		return
@@ -282,9 +282,9 @@ func ResetPassword(c *gin.Context) {
 }
 
 func ChangePassword(c *gin.Context) {
-	email, err := utils.Decrypt(c.Param("token"))
+	email, err := utils.DecryptWithExpiry(c.Param("token"), time.Hour)
 	if err != nil {
-		utils.Err(c, http.StatusBadRequest, "Invalid reset link", err)
+		utils.Err(c, http.StatusBadRequest, "Invalid or expired reset link", err)
 		return
 	}
 
