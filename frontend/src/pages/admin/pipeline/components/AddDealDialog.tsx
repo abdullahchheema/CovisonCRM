@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label";
 import { apiDeals } from "@/services/models/dealsModel";
 import { AssignedToSelect, ContactSelect } from "@/components/common";
 import { IDeal } from "../types";
-import { CURRENCIES, STAGE_ITEMS, makeDealInitialValues, dealValidationSchema } from "../helpers";
+import { CURRENCIES, STAGE_ITEMS, STAGE_ITEMS_MANUAL, makeDealInitialValues, dealValidationSchema } from "../helpers";
 import { DatePicker } from "@/components/custom";
 
 interface IAddDealDialogProps {
@@ -146,7 +146,7 @@ const AddDealDialog = ({
             handleChange={handleChange}
             touched={touched}
             errors={errors}
-            labelItms={STAGE_ITEMS}
+            labelItms={isEdit ? STAGE_ITEMS : STAGE_ITEMS_MANUAL}
           />
           <div className="space-y-1">
             <Label htmlFor="expectedClose">Expected Close</Label>

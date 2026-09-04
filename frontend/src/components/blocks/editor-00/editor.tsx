@@ -5,7 +5,7 @@ import {
   LexicalComposer,
 } from "@lexical/react/LexicalComposer"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
-import { EditorState, SerializedEditorState } from "lexical"
+import { EditorState, LexicalEditor, SerializedEditorState } from "lexical"
 
 import { editorTheme } from "@/components/editor/themes/editor-theme"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -27,11 +27,13 @@ export function Editor({
   editorSerializedState,
   onChange,
   onSerializedChange,
+  onEditorMount,
 }: {
   editorState?: EditorState
   editorSerializedState?: SerializedEditorState
   onChange?: (editorState: EditorState) => void
   onSerializedChange?: (editorSerializedState: SerializedEditorState) => void
+  onEditorMount?: (editor: LexicalEditor) => void
 }) {
   return (
     <div className="bg-background overflow-hidden rounded-lg border shadow">
@@ -45,7 +47,7 @@ export function Editor({
         }}
       >
         <TooltipProvider>
-          <Plugins />
+          <Plugins onEditorMount={onEditorMount} />
 
           <OnChangePlugin
             ignoreSelectionChange={true}

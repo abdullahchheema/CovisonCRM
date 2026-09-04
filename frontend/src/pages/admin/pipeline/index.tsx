@@ -180,17 +180,21 @@ const Pipeline = () => {
                       <span className="text-xs font-medium tabular-nums bg-primary/10 text-primary rounded-full px-1.5 py-0.5">
                         {stageDeals.length}
                       </span>
-                      <AddDealDialog
-                        defaultStage={stage.key}
-                        onCreated={(deal) =>
-                          setDeals((prev) => [deal, ...prev])
-                        }
-                        trigger={
-                          <button className="text-primary/50 hover:text-primary transition-colors">
-                            <Plus className="size-4" />
-                          </button>
-                        }
-                      />
+                      {/* Leads enter only via email, so no manual add on the
+                          Lead column. */}
+                      {stage.key !== "lead" && (
+                        <AddDealDialog
+                          defaultStage={stage.key}
+                          onCreated={(deal) =>
+                            setDeals((prev) => [deal, ...prev])
+                          }
+                          trigger={
+                            <button className="text-primary/50 hover:text-primary transition-colors">
+                              <Plus className="size-4" />
+                            </button>
+                          }
+                        />
+                      )}
                     </div>
 
                     {/* Stage value */}

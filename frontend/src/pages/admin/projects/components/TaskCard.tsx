@@ -1,26 +1,37 @@
 import { useState } from "react";
+import { CalendarDays, AlertTriangle, Timer } from "lucide-react";
 import { DragHandle } from "@/components/custom";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { RowActionsMenu } from "./RowActionsMenu";
-import type { Todo, TodoAuthor } from "../types";
-import { AssignedToSelect, AuthorAvatar } from "@/components/common";
-import { Textarea } from "@/components/ui/textarea";
+import { AuthorAvatar, PriorityIndicator } from "@/components/common";
+import CustomBadge, { badgeVariants } from "@/components/custom/CustomBadge";
+import { type VariantProps } from "class-variance-authority";
+import CardFields from "./CardFields";
+import { accentForColor } from "../helpers";
+import type { Todo, TodoFields } from "../types";
+
+type BadgeVariant = NonNullable<VariantProps<typeof badgeVariants>["variant"]>;
 
 interface TaskCardProps {
   todo: Todo;
   provided: any;
   isDragging: boolean;
   onDelete: () => void;
-  onEdit: (updates: {
-    title: string;
-    description: string;
-    author: TodoAuthor;
-  }) => void;
+  onEdit: (updates: TodoFields) => void;
 }
+
+const toFields = (todo: Todo): TodoFields => ({
+  title: todo.title,
+  description: todo.description,
+  author: todo.author,
+  label: todo.label ?? "",
+  labelColor: todo.labelColor || "primary",
+  priority: todo.priority ?? "",
+  dueDate: todo.dueDate ?? "",
+  estimatedDuration: todo.estimatedDuration ?? "",
+});
 
 const TaskCard = ({
   todo,
@@ -30,26 +41,38 @@ const TaskCard = ({
   onEdit,
 }: TaskCardProps) => {
   const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(todo.title);
-  const [description, setDescription] = useState(todo.description);
-  const [assignee, setAssignee] = useState(todo.author.name);
+  const [draft, setDraft] = useState<TodoFields>(toFields(todo));
+  const [error, setError] = useState("");
+
+  const change = (patch: Partial<TodoFields>) =>
+    setDraft((prev) => ({ ...prev, ...patch }));
 
   const save = () => {
-    if (!title.trim()) return;
+    if (draft.title.trim().length < 3) {
+      setError("Title is too short");
+      return;
+    }
     onEdit({
-      title: title.trim(),
-      description: description.trim(),
-      author: { name: assignee, image: todo.author.image },
+      ...draft,
+      title: draft.title.trim(),
+      description: draft.description.trim(),
+      label: draft.label.trim(),
     });
     setEditing(false);
   };
 
   const cancel = () => {
-    setTitle(todo.title);
-    setDescription(todo.description);
-    setAssignee(todo.author.name);
+    setDraft(toFields(todo));
+    setError("");
     setEditing(false);
   };
+
+  // Overdue when a due date is set, in the past — only meaningful while open.
+  const dueDate = todo.dueDate ? new Date(todo.dueDate + "T00:00:00") : null;
+  const overdue =
+    dueDate !== null &&
+    !isNaN(dueDate.getTime()) &&
+    dueDate.getTime() < new Date().setHours(0, 0, 0, 0);
 
   return (
     <Card
@@ -57,45 +80,21 @@ const TaskCard = ({
       {...provided.draggableProps}
       style={{ ...provided.draggableProps.style }}
       className={cn(
-        "p-3 group transition-shadow",
-        isDragging && "shadow-lg ring-2 ring-primary/40 border-primary/30",
+        "p-3 group transition-shadow border-l-4",
+        accentForColor(todo.labelColor),
+        isDragging && "shadow-lg ring-2 ring-primary/40",
       )}
     >
       {editing ? (
-        <div className="space-y-2.5">
-          <div className="space-y-1">
-            <Label className="text-xs">Title</Label>
-            <Input
-              autoFocus
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") save();
-                if (e.key === "Escape") cancel();
-              }}
-              className="h-7 text-sm"
-              placeholder="Card title"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Description</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="Description (optional)"
-              className="w-full rounded-md border border-input bg-transparent px-3 py-1.5 text-xs shadow-sm resize-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-xs">Assignee</Label>
-            <AssignedToSelect
-              value={assignee}
-              onChange={setAssignee}
-              triggerClassName="h-7 text-xs"
-            />
-          </div>
-          <div className="flex gap-2 justify-end w-full">
+        <>
+          <CardFields
+            value={draft}
+            onChange={change}
+            onSubmit={save}
+            onCancel={cancel}
+            titleError={error}
+          />
+          <div className="flex gap-2 justify-end w-full mt-2.5">
             <Button size="sm" variant="ghost" onClick={cancel}>
               Cancel
             </Button>
@@ -103,7 +102,7 @@ const TaskCard = ({
               Save
             </Button>
           </div>
-        </div>
+        </>
       ) : (
         <>
           <div className="flex items-start justify-between gap-2 mb-2">
@@ -121,10 +120,52 @@ const TaskCard = ({
             />
           </div>
 
+          {todo.label && (
+            <div className="ml-5 mb-2">
+              <CustomBadge variant={(todo.labelColor as BadgeVariant) || "primary"}>
+                {todo.label}
+              </CustomBadge>
+            </div>
+          )}
+
           {todo.description && (
             <p className="text-xs text-muted-foreground line-clamp-2 ml-5 mb-2">
               {todo.description}
             </p>
+          )}
+
+          {(todo.dueDate || todo.priority || todo.estimatedDuration) && (
+            <div className="flex items-center gap-2 ml-5 mb-2 flex-wrap">
+              {todo.dueDate && (
+                <span
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[11px] font-medium",
+                    overdue
+                      ? "bg-destructive/10 text-destructive"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {overdue ? (
+                    <AlertTriangle className="size-3" />
+                  ) : (
+                    <CalendarDays className="size-3" />
+                  )}
+                  {new Date(todo.dueDate + "T00:00:00").toLocaleDateString(
+                    undefined,
+                    { month: "short", day: "numeric" },
+                  )}
+                </span>
+              )}
+              {todo.priority && (
+                <PriorityIndicator value={todo.priority} className="text-[11px]" />
+              )}
+              {todo.estimatedDuration && (
+                <span className="inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
+                  <Timer className="size-3" />
+                  {todo.estimatedDuration}
+                </span>
+              )}
+            </div>
           )}
 
           <div className="flex items-center justify-between ml-5">

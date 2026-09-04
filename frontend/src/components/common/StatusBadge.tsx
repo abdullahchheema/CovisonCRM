@@ -42,6 +42,14 @@ const VALUE_TO_VARIANT: Record<string, BadgeVariant> = {
   active: "primary",
   draft: "neutral",
   paused: "warning",
+
+  // Sent email status / source / recipient mode
+  sent: "success",
+  failed: "danger",
+  template: "violet",
+  custom: "blue",
+  group: "primary",
+  individual: "sky",
 };
 
 interface StatusBadgeProps {

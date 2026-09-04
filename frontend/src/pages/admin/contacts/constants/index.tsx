@@ -10,7 +10,7 @@ import { NoteType } from "../types";
 export const PAGE_SIZE = 50;
 
 export const CSV_TEMPLATE =
-  "name,email,number,company,jobTitle,priority,companySize,probability,status\nJane Smith,jane@acme.com,+15550001234,Acme Corp,Product Manager,high,250,0.7,new";
+  "name,email,number,company,jobTitle,priority,companySize,probability,status,linkedinUrl,website,country,city,niche\nJane Smith,jane@acme.com,+15550001234,Acme Corp,Product Manager,high,250,0.7,new,linkedin.com/in/janesmith,acme.com,USA,New York,Wholesale Trade";
 
 export const NOTE_TYPE_META: Record<
   NoteType,

@@ -7,21 +7,32 @@ export const CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD"].map(
 );
 export const STAGE_ITEMS = STAGES.map((s) => ({ val: s.key, label: s.label }));
 
+// Leads can only enter the pipeline by emailing a contact, so the "lead" stage
+// is not offered when manually creating a deal.
+export const STAGE_ITEMS_MANUAL = STAGES.filter((s) => s.key !== "lead").map(
+  (s) => ({ val: s.key, label: s.label }),
+);
+
 export const makeDealInitialValues = (
   deal?: IDeal,
   defaultStage?: string,
   defaultContactId?: string,
   defaultContactName?: string,
-) => ({
-  title: deal?.title ?? "",
-  contactName: deal?.contactName ?? defaultContactName ?? "",
-  contactId: deal?.contactId ?? defaultContactId ?? "",
-  value: deal?.value?.toString() ?? "",
-  currency: deal?.currency ?? "USD",
-  stage: deal?.stage ?? defaultStage ?? "lead",
-  assignedTo: deal?.assignedTo ?? "",
-  expectedClose: deal?.expectedClose ? deal.expectedClose.slice(0, 10) : "",
-});
+) => {
+  // New manual deals can't start as leads — fall back to "qualified".
+  const newStage =
+    !defaultStage || defaultStage === "lead" ? "qualified" : defaultStage;
+  return {
+    title: deal?.title ?? "",
+    contactName: deal?.contactName ?? defaultContactName ?? "",
+    contactId: deal?.contactId ?? defaultContactId ?? "",
+    value: deal?.value?.toString() ?? "",
+    currency: deal?.currency ?? "USD",
+    stage: deal?.stage ?? newStage,
+    assignedTo: deal?.assignedTo ?? "",
+    expectedClose: deal?.expectedClose ? deal.expectedClose.slice(0, 10) : "",
+  };
+};
 
 export const dealValidationSchema = Yup.object({
   title: Yup.string().required("Title is required"),

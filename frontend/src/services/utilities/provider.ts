@@ -59,11 +59,18 @@ function writeCache(resource: string, key: string, data: unknown): void {
  */
 export function invalidateCache(resource: string): void {
   const base = resource.split("/")[0];
+  // Matches both the resource's own cache keys ("projects:all") and any
+  // sub-path cache keys nested under it ("projects/abc123/board:all") —
+  // without the second prefix, mutating a project's board (add/edit/delete a
+  // todo or column) would leave the cached board response stale for up to
+  // the full TTL, even though the change was persisted successfully.
+  const isMatch = (key: string) =>
+    key.startsWith(base + ":") || key.startsWith(base + "/");
   for (const key of cache.keys()) {
-    if (key.startsWith(base + ":")) cache.delete(key);
+    if (isMatch(key)) cache.delete(key);
   }
   for (const key of inFlight.keys()) {
-    if (key.startsWith(base + ":")) inFlight.delete(key);
+    if (isMatch(key)) inFlight.delete(key);
   }
 }
 

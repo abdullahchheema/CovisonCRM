@@ -1,6 +1,7 @@
 import { useEnums } from "@/hooks/useEnums";
 import { toLabelItems } from "@/utils";
-import { FormField, FormSelect } from "@/components/common";
+import { FormField, FormSelect, TagSelector } from "@/components/common";
+import { Label } from "@/components/ui/label";
 
 type EditForm = {
   name: string;
@@ -12,14 +13,21 @@ type EditForm = {
   probability: string;
   status: string;
   priority: string;
+  linkedinUrl: string;
+  website: string;
+  country: string;
+  city: string;
+  niche: string;
 };
 
 interface EditProps {
   form: EditForm;
   set: (field: keyof EditForm, value: string) => void;
+  tagIds: string[];
+  onTagIdsChange: (ids: string[]) => void;
 }
 
-const Edit = ({ form, set }: EditProps) => {
+const Edit = ({ form, set, tagIds, onTagIdsChange }: EditProps) => {
   const { contactStatuses, contactPriorities } = useEnums();
 
   return (
@@ -73,6 +81,35 @@ const Edit = ({ form, set }: EditProps) => {
         onChange={(v) => set("priority", v)}
         items={toLabelItems(contactPriorities)}
       />
+      <FormField
+        label="LinkedIn URL"
+        value={form.linkedinUrl}
+        onChange={(v) => set("linkedinUrl", v)}
+      />
+      <FormField
+        label="Website"
+        value={form.website}
+        onChange={(v) => set("website", v)}
+      />
+      <FormField
+        label="Country"
+        value={form.country}
+        onChange={(v) => set("country", v)}
+      />
+      <FormField
+        label="City"
+        value={form.city}
+        onChange={(v) => set("city", v)}
+      />
+      <FormField
+        label="Niche / Industry"
+        value={form.niche}
+        onChange={(v) => set("niche", v)}
+      />
+      <div className="space-y-1.5">
+        <Label>Tags</Label>
+        <TagSelector selectedIds={tagIds} onChange={onTagIdsChange} />
+      </div>
     </div>
   );
 };

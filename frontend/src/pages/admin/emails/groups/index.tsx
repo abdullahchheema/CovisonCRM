@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Users } from "lucide-react";
+import { Users, Zap } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   CustomTable,
@@ -9,6 +9,7 @@ import {
   EditIconButton,
   AddPrimaryButton,
 } from "@/components/custom";
+import CustomBadge from "@/components/custom/CustomBadge";
 import { apiEmailGroups } from "@/services/models/emailGroupsModel";
 import { confirmToast } from "@/utils/confirmToast";
 import { EmailGroup } from "../types";
@@ -74,16 +75,32 @@ const EmailGroups = () => {
       },
     },
     {
+      label: "Type",
+      name: "type",
+      options: {
+        customBodyRender: (val: string) =>
+          val === "dynamic" ? (
+            <CustomBadge variant="violet">
+              <Zap className="h-3 w-3 mr-1" /> Dynamic
+            </CustomBadge>
+          ) : (
+            <CustomBadge variant="neutral">Static</CustomBadge>
+          ),
+      },
+    },
+    {
       label: "Contacts",
-      name: "contactIds",
+      name: "contactCount",
       options: {
         sortable: true,
-        sortValue: (row: any) => row.contactIds?.length ?? 0,
-        customBodyRender: (val: string[]) => (
-          <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full">
-            <Users className="h-3 w-3" /> {val?.length ?? 0}
-          </span>
-        ),
+        customBodyRender: (_val: number, rowIndex = 0) => {
+          const g = filteredGroups[rowIndex];
+          return (
+            <span className="inline-flex items-center gap-1 text-xs bg-muted px-2 py-0.5 rounded-full">
+              <Users className="h-3 w-3" /> {g?.contactCount ?? 0}
+            </span>
+          );
+        },
       },
     },
     {

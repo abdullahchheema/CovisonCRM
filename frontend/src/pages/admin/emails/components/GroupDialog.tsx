@@ -1,20 +1,30 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { CustomModal } from "@/components/custom";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { FormField } from "@/components/common";
+import { FormField, TagSelector } from "@/components/common";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { apiEmailGroups } from "@/services/models/emailGroupsModel";
 import { apiContacts } from "@/services/models/contactsModel";
-import { EmailGroup } from "../types";
+import { apiProvider } from "@/services/utilities/provider";
+import { EmailGroup, GroupType, TagMatch } from "../types";
 
 interface Contact {
   _id: string;
   name: string;
   email: string;
+  tagIds?: string[];
 }
 
 interface GroupDialogProps {
@@ -36,12 +46,26 @@ const GroupDialog = ({ group, onSaved, trigger }: GroupDialogProps) => {
   );
   const [nameError, setNameError] = useState("");
 
+  // Static: manual contacts + an "add by tag" helper.
+  // Dynamic: membership is a live tag rule, so it grows automatically as
+  // matching contacts are added later — no manual upkeep.
+  const [type, setType] = useState<GroupType>(group?.type ?? "static");
+  const [addByTagIds, setAddByTagIds] = useState<string[]>([]);
+  const [dynamicTagIds, setDynamicTagIds] = useState<string[]>(group?.tagIds ?? []);
+  const [tagMatch, setTagMatch] = useState<TagMatch>(group?.tagMatch ?? "any");
+  const [dynamicCount, setDynamicCount] = useState<number | null>(null);
+  const [loadingCount, setLoadingCount] = useState(false);
+
   const handleOpen = (v: boolean) => {
     setOpen(v);
     if (v) {
       setName(group?.name ?? "");
       setDescription(group?.description ?? "");
       setSelectedIds(new Set(group?.contactIds ?? []));
+      setType(group?.type ?? "static");
+      setAddByTagIds([]);
+      setDynamicTagIds(group?.tagIds ?? []);
+      setTagMatch(group?.tagMatch ?? "any");
       setNameError("");
       setSearch("");
       setLoadingContacts(true);
@@ -57,12 +81,49 @@ const GroupDialog = ({ group, onSaved, trigger }: GroupDialogProps) => {
     }
   };
 
+  // Live member-count preview for dynamic groups, debounced on rule change.
+  useEffect(() => {
+    if (!open || type !== "dynamic") return;
+    if (dynamicTagIds.length === 0) {
+      setDynamicCount(0);
+      return;
+    }
+    setLoadingCount(true);
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => {
+      apiProvider
+        .post("contacts/audience-count", { tagIds: dynamicTagIds, tagMatch }, "", true)
+        .then((res) => {
+          if (typeof res?.total === "number") setDynamicCount(res.total);
+        })
+        .finally(() => setLoadingCount(false));
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      ctrl.abort();
+    };
+  }, [open, type, dynamicTagIds, tagMatch]);
+
   const toggle = (id: string) =>
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+
+  const handleAddByTag = () => {
+    if (addByTagIds.length === 0) return;
+    const matched = contacts.filter((c) =>
+      addByTagIds.some((tagId) => c.tagIds?.includes(tagId)),
+    );
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      matched.forEach((c) => next.add(c._id));
+      return next;
+    });
+    toast.success(`Added ${matched.length} contact(s) matching the selected tags`);
+    setAddByTagIds([]);
+  };
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -73,7 +134,10 @@ const GroupDialog = ({ group, onSaved, trigger }: GroupDialogProps) => {
     const payload = {
       name: name.trim(),
       description: description.trim(),
-      contactIds: [...selectedIds],
+      type,
+      contactIds: type === "static" ? [...selectedIds] : [],
+      tagIds: type === "dynamic" ? dynamicTagIds : [],
+      tagMatch: type === "dynamic" ? tagMatch : "",
     };
     const res = group?._id
       ? await apiEmailGroups.putById!(
@@ -107,6 +171,7 @@ const GroupDialog = ({ group, onSaved, trigger }: GroupDialogProps) => {
       title={group ? "Edit Group" : "New Email Group"}
       trigger={trigger}
       size="lg"
+      disableOutsideClose
     >
       <div className="space-y-4 pt-1">
         <FormField
@@ -131,49 +196,124 @@ const GroupDialog = ({ group, onSaved, trigger }: GroupDialogProps) => {
             onChange={(e) => setDescription(e.target.value)}
           />
         </div>
+
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label>Contacts</Label>
-            <span className="text-xs text-muted-foreground">
-              {selectedIds.size} selected
-            </span>
-          </div>
-          <Input
-            placeholder="Search contacts…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 text-sm"
-          />
-          <div className="border rounded-md overflow-y-auto max-h-52">
-            {loadingContacts ? (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                Loading contacts…
-              </p>
-            ) : filtered.length === 0 ? (
-              <p className="text-xs text-muted-foreground text-center py-6">
-                No contacts found
-              </p>
-            ) : (
-              filtered.map((c) => (
-                <label
-                  key={c._id}
-                  className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-0"
-                >
-                  <Checkbox
-                    checked={selectedIds.has(c._id)}
-                    onCheckedChange={() => toggle(c._id)}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{c.name}</p>
-                    <p className="text-xs text-muted-foreground truncate">
-                      {c.email}
-                    </p>
-                  </div>
-                </label>
-              ))
-            )}
-          </div>
+          <Label>Group Type</Label>
+          <RadioGroup
+            value={type}
+            className="flex gap-4"
+            onValueChange={(v) => setType(v as GroupType)}
+          >
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="static" id="group-static" />
+              <Label htmlFor="group-static" className="font-normal">
+                Static — fixed contact list
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <RadioGroupItem value="dynamic" id="group-dynamic" />
+              <Label htmlFor="group-dynamic" className="font-normal">
+                Dynamic — auto-updates from tags
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
+
+        {type === "dynamic" ? (
+          <div className="space-y-3 rounded-lg border bg-muted/30 p-4">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Contacts matching</Label>
+              <Select value={tagMatch} onValueChange={(v) => setTagMatch(v as TagMatch)}>
+                <SelectTrigger className="h-7 w-24 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any" className="text-xs">Any of</SelectItem>
+                  <SelectItem value="all" className="text-xs">All of</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <TagSelector
+              selectedIds={dynamicTagIds}
+              onChange={setDynamicTagIds}
+              allowCreate={false}
+            />
+            <p className="text-xs text-muted-foreground">
+              {loadingCount
+                ? "Calculating…"
+                : dynamicCount !== null
+                  ? `${dynamicCount} contact${dynamicCount !== 1 ? "s" : ""} currently match — this group will automatically include new contacts tagged this way.`
+                  : "Select at least one tag"}
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="flex items-end gap-2 rounded-lg border bg-muted/30 p-3">
+              <div className="flex-1">
+                <Label className="text-xs mb-1.5 block">Add contacts by tag</Label>
+                <TagSelector
+                  selectedIds={addByTagIds}
+                  onChange={setAddByTagIds}
+                  allowCreate={false}
+                />
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={addByTagIds.length === 0}
+                onClick={handleAddByTag}
+              >
+                Add
+              </Button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label>Contacts</Label>
+                <span className="text-xs text-muted-foreground">
+                  {selectedIds.size} selected
+                </span>
+              </div>
+              <Input
+                placeholder="Search contacts…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-8 text-sm"
+              />
+              <div className="border rounded-md overflow-y-auto max-h-52">
+                {loadingContacts ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    Loading contacts…
+                  </p>
+                ) : filtered.length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-6">
+                    No contacts found
+                  </p>
+                ) : (
+                  filtered.map((c) => (
+                    <label
+                      key={c._id}
+                      className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer border-b last:border-0"
+                    >
+                      <Checkbox
+                        checked={selectedIds.has(c._id)}
+                        onCheckedChange={() => toggle(c._id)}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{c.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {c.email}
+                        </p>
+                      </div>
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-end gap-2 pt-1">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel

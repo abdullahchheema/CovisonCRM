@@ -12,7 +12,7 @@ import ActivityTimeline from "./ActivityTimeline";
 import Notes from "./Notes";
 import DealsTab from "./Deals";
 import Edit from "./Edit";
-import { StatusBadge } from "@/components/common";
+import { StatusBadge, TagBadge } from "@/components/common";
 
 interface ContactPanelProps {
   contact: IContact | null;
@@ -33,6 +33,11 @@ const initForm = (c: IContact) => ({
   probability: c.probability ?? "",
   status: c.status ?? "",
   priority: c.priority ?? "",
+  linkedinUrl: c.linkedinUrl ?? "",
+  website: c.website ?? "",
+  country: c.country ?? "",
+  city: c.city ?? "",
+  niche: c.niche ?? "",
 });
 
 const ContactPanel = ({
@@ -50,6 +55,7 @@ const ContactPanel = ({
   const [form, setForm] = useState<ReturnType<typeof initForm>>(() =>
     contact ? initForm(contact) : initForm({} as IContact),
   );
+  const [tagIds, setTagIds] = useState<string[]>(contact?.tagIds ?? []);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -57,6 +63,7 @@ const ContactPanel = ({
     setNotes([]);
     setTab(defaultTab);
     setForm(initForm(contact));
+    setTagIds(contact.tagIds ?? []);
     setLoading(true);
     const controller = new AbortController();
     apiProvider
@@ -80,7 +87,7 @@ const ContactPanel = ({
     setSaving(true);
     const res = await apiContacts.putById!(
       contact._id,
-      { ...form, companySize: Number(form.companySize) || 0 },
+      { ...form, companySize: Number(form.companySize) || 0, tagIds },
       new AbortController().signal,
       "",
       true,
@@ -130,6 +137,13 @@ const ContactPanel = ({
               </span>
             )}
           </div>
+          {contact.tags && contact.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2.5">
+              {contact.tags.map((t) => (
+                <TagBadge key={t._id} tag={t} />
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Tabs */}
@@ -170,7 +184,7 @@ const ContactPanel = ({
           ) : tab === "deals" ? (
             <DealsTab contact={contact} />
           ) : (
-            <Edit form={form} set={set} />
+            <Edit form={form} set={set} tagIds={tagIds} onTagIdsChange={setTagIds} />
           )}
         </div>
 

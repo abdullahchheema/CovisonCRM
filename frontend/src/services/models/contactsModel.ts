@@ -1,6 +1,7 @@
 import { ApiCore } from "../utilities/core";
 import { BASE_URL } from "../api";
 import { getStoredToken } from "../utilities/auth";
+import { invalidateCache } from "../utilities/provider";
 
 const url = "contacts";
 
@@ -31,12 +32,59 @@ export const exportContacts = (): Promise<void> =>
     URL.revokeObjectURL(href);
   });
 
-export const importContacts = (file: File): Promise<{ imported: number; skipped: string[] }> => {
+export const importContacts = (
+  file: File,
+  tagIds: string[] = [],
+  autoTagNiche = false,
+): Promise<{ imported: number; skipped: string[] }> => {
   const form = new FormData();
   form.append("file", file);
+  if (tagIds.length > 0) form.append("tagIds", tagIds.join(","));
+  if (autoTagNiche) form.append("autoTagNiche", "true");
   return fetch(`${BASE_URL}/contacts/import`, {
     method: "POST",
     headers: { "auth-token": getToken() ?? "" },
     body: form,
-  }).then((res) => res.json());
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      invalidateCache("contacts");
+      return data;
+    });
 };
+
+export const bulkDeleteContacts = (
+  ids: string[],
+): Promise<{ deleted: number; message?: string }> =>
+  fetch(`${BASE_URL}/contacts/bulk-delete`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "auth-token": getToken() ?? "",
+    },
+    body: JSON.stringify({ ids }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      invalidateCache("contacts");
+      return data;
+    });
+
+export const bulkTagContacts = (
+  ids: string[],
+  tagIds: string[],
+  action: "add" | "remove" | "replace",
+): Promise<{ updated: number; message?: string }> =>
+  fetch(`${BASE_URL}/contacts/bulk-tag`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "auth-token": getToken() ?? "",
+    },
+    body: JSON.stringify({ ids, tagIds, action }),
+  })
+    .then((res) => res.json())
+    .then((data) => {
+      invalidateCache("contacts");
+      return data;
+    });

@@ -24,6 +24,9 @@ interface CustomModalProps {
   trigger?: React.ReactNode;
   size?: keyof typeof SIZE_MAP;
   contentClassName?: string;
+  /** When true, the modal only closes via the X button / Cancel — not by
+   * clicking the backdrop, dragging a selection outside, or pressing Escape. */
+  disableOutsideClose?: boolean;
 }
 
 const CustomModal = ({
@@ -35,16 +38,27 @@ const CustomModal = ({
   trigger,
   size = "md",
   contentClassName,
+  disableOutsideClose,
 }: CustomModalProps) => {
   const handleOpenChange = (isOpen: boolean) => {
     onOpenChange?.(isOpen);
     if (!isOpen) onClose?.();
   };
 
+  const guardProps = disableOutsideClose
+    ? {
+        onInteractOutside: (e: Event) => e.preventDefault(),
+        onEscapeKeyDown: (e: KeyboardEvent) => e.preventDefault(),
+      }
+    : {};
+
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={cn(SIZE_MAP[size], contentClassName)}>
+      <DialogContent
+        className={cn(SIZE_MAP[size], contentClassName)}
+        {...guardProps}
+      >
         {title && (
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>

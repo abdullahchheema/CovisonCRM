@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { DragDropContext, Droppable, Draggable, type DropResult } from "@hello-pangea/dnd";
 import {
   useReactTable,
   getCoreRowModel,
@@ -21,10 +22,12 @@ import {
   ChevronRight,
   Columns,
   Filter,
+  GripVertical,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -33,6 +36,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toLabel } from "@/utils";
+import { cn } from "@/lib/utils";
 
 import {
   DropdownMenu,
@@ -40,7 +44,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 
 export interface TableColumn {
@@ -50,7 +53,19 @@ export interface TableColumn {
     customBodyRender?: (value: any, rowIndex?: number) => React.ReactNode;
     sortable?: boolean;
     sortValue?: (row: any) => string | number;
+    /** If false, this column starts hidden but can still be re-enabled via the Columns toggle. */
+    defaultVisible?: boolean;
   };
+}
+
+export interface RowSelectionProps<TData> {
+  selectedIds: string[];
+  onSelectedIdsChange: (ids: string[]) => void;
+  getRowId: (row: TData) => string;
+  /** Total rows matching current filters across all pages (for "select all N" prompt). */
+  totalMatching?: number;
+  /** Called when the user clicks "select all N matching contacts". Should fetch all matching IDs and call onSelectedIdsChange. */
+  onSelectAllMatching?: () => void | Promise<void>;
 }
 
 export interface ServerSideColumnFilter {
@@ -68,6 +83,8 @@ export interface ServerSideProps {
   pageSize: number;
   onPageChange: (page: number) => void;
   onSearchChange: (search: string) => void;
+  /** If provided, shows an editable "rows per page" input that lets the user type a custom page size. */
+  onPageSizeChange?: (pageSize: number) => void;
   loading?: boolean;
   columnFilters?: Record<string, ServerSideColumnFilter>;
 }
@@ -81,6 +98,30 @@ interface CustomTableProps<
   downloadName?: string;
   pageSize?: number;
   serverSide?: ServerSideProps;
+  rowSelection?: RowSelectionProps<TData>;
+  /** When set, clicking anywhere on a row (except interactive cells) invokes this with the row's data. */
+  onRowClick?: (row: TData) => void;
+  /** When set, column visibility + order are saved to localStorage under this key and restored on reload. */
+  persistKey?: string;
+}
+
+function loadPersisted<T>(key: string | undefined, suffix: string): T | null {
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(`tinycrm-table-prefs:${key}:${suffix}`);
+    return raw ? (JSON.parse(raw) as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(key: string | undefined, suffix: string, value: unknown): void {
+  if (!key) return;
+  try {
+    localStorage.setItem(`tinycrm-table-prefs:${key}:${suffix}`, JSON.stringify(value));
+  } catch {
+    // ignore storage errors (e.g. quota, privacy mode)
+  }
 }
 
 const CustomTable = <TData extends Record<string, any>>({
@@ -90,13 +131,69 @@ const CustomTable = <TData extends Record<string, any>>({
   downloadName = "file",
   pageSize = 10,
   serverSide,
+  rowSelection,
+  onRowClick,
+  persistKey,
 }: CustomTableProps<TData>) => {
   const [globalFilter, setGlobalFilter] = useState("");
   const [serverSearch, setServerSearch] = useState("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () => {
+      const saved = loadPersisted<VisibilityState>(persistKey, "visibility");
+      if (saved) return saved;
+      return colDefs.reduce<VisibilityState>((acc, c) => {
+        if (c.options?.defaultVisible === false) acc[c.name] = false;
+        return acc;
+      }, {});
+    },
+  );
   const [showColumnFilters, setShowColumnFilters] = useState(false);
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    const defaultOrder = colDefs.map((c) => c.name);
+    const saved = loadPersisted<string[]>(persistKey, "order");
+    // Only trust the saved order if it contains exactly the same columns —
+    // otherwise a column added/removed since the last visit would silently
+    // disappear or be missing from the table.
+    if (
+      saved &&
+      saved.length === defaultOrder.length &&
+      defaultOrder.every((c) => saved.includes(c))
+    ) {
+      return saved;
+    }
+    return defaultOrder;
+  });
+
+  // Persist whenever visibility or order changes
+  React.useEffect(() => {
+    savePersisted(persistKey, "visibility", columnVisibility);
+  }, [persistKey, columnVisibility]);
+  React.useEffect(() => {
+    savePersisted(persistKey, "order", columnOrder);
+  }, [persistKey, columnOrder]);
+  const [selectAllLoading, setSelectAllLoading] = useState(false);
+  const [pageSizeInput, setPageSizeInput] = useState(
+    String(serverSide?.pageSize ?? pageSize),
+  );
+
+  // Keep the input in sync if pageSize changes from outside (e.g. on mount/reset)
+  React.useEffect(() => {
+    if (serverSide) setPageSizeInput(String(serverSide.pageSize));
+  }, [serverSide?.pageSize]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const commitPageSize = () => {
+    if (!serverSide?.onPageSizeChange) return;
+    const parsed = parseInt(pageSizeInput, 10);
+    if (!Number.isFinite(parsed) || parsed < 1) {
+      setPageSizeInput(String(serverSide.pageSize));
+      return;
+    }
+    const clamped = Math.min(parsed, 10000);
+    serverSide.onPageSizeChange(clamped);
+    setPageSizeInput(String(clamped));
+  };
 
   // Debounce server-side search
   React.useEffect(() => {
@@ -136,11 +233,13 @@ const CustomTable = <TData extends Record<string, any>>({
       globalFilter: serverSide ? "" : globalFilter,
       columnFilters: serverSide ? [] : columnFilters,
       columnVisibility,
+      columnOrder,
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: serverSide ? undefined : setGlobalFilter,
     onColumnFiltersChange: serverSide ? undefined : setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
+    onColumnOrderChange: setColumnOrder,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     ...(serverSide
@@ -173,6 +272,69 @@ const CustomTable = <TData extends Record<string, any>>({
     a.click();
     URL.revokeObjectURL(url);
   };
+
+  // Row selection (checkboxes) — driven entirely by the rowSelection prop
+  // rather than TanStack's own row-selection state, so the parent page owns it.
+  const visibleRows = table.getRowModel().rows;
+  const visibleRowIds = rowSelection
+    ? visibleRows.map((r) => rowSelection.getRowId(r.original))
+    : [];
+  const selectedOnPage = rowSelection
+    ? visibleRowIds.filter((id) => rowSelection.selectedIds.includes(id))
+    : [];
+  const allOnPageSelected =
+    visibleRowIds.length > 0 && selectedOnPage.length === visibleRowIds.length;
+  const someOnPageSelected =
+    selectedOnPage.length > 0 && !allOnPageSelected;
+
+  const toggleSelectAllOnPage = () => {
+    if (!rowSelection) return;
+    if (allOnPageSelected) {
+      rowSelection.onSelectedIdsChange(
+        rowSelection.selectedIds.filter((id) => !visibleRowIds.includes(id)),
+      );
+    } else {
+      const merged = new Set([...rowSelection.selectedIds, ...visibleRowIds]);
+      rowSelection.onSelectedIdsChange(Array.from(merged));
+    }
+  };
+
+  const toggleSelectRow = (id: string) => {
+    if (!rowSelection) return;
+    if (rowSelection.selectedIds.includes(id)) {
+      rowSelection.onSelectedIdsChange(
+        rowSelection.selectedIds.filter((sid) => sid !== id),
+      );
+    } else {
+      rowSelection.onSelectedIdsChange([...rowSelection.selectedIds, id]);
+    }
+  };
+
+  const handleSelectAllMatching = async () => {
+    if (!rowSelection?.onSelectAllMatching) return;
+    setSelectAllLoading(true);
+    try {
+      await rowSelection.onSelectAllMatching();
+    } finally {
+      setSelectAllLoading(false);
+    }
+  };
+
+  const handleColumnDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const reordered = Array.from(columnOrder);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setColumnOrder(reordered);
+  };
+
+  const canSelectAllMatching =
+    rowSelection &&
+    serverSide &&
+    rowSelection.totalMatching !== undefined &&
+    allOnPageSelected &&
+    rowSelection.totalMatching > visibleRowIds.length &&
+    rowSelection.selectedIds.length < rowSelection.totalMatching;
 
   // Pagination display values
   const totalRows = serverSide
@@ -236,7 +398,7 @@ const CustomTable = <TData extends Record<string, any>>({
             </Button>
           )}
 
-          {/* Column visibility */}
+          {/* Column visibility + drag-to-reorder */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 gap-1.5">
@@ -244,24 +406,65 @@ const CustomTable = <TData extends Record<string, any>>({
                 Columns
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
+            <DropdownMenuContent align="end" className="w-52">
               <DropdownMenuLabel className="text-xs">
-                Toggle columns
+                Toggle & drag to reorder
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              {table
-                .getAllColumns()
-                .filter((col) => col.getCanHide())
-                .map((col) => (
-                  <DropdownMenuCheckboxItem
-                    key={col.id}
-                    className="text-xs capitalize"
-                    checked={col.getIsVisible()}
-                    onCheckedChange={(v) => col.toggleVisibility(v)}
-                  >
-                    {colDefs.find((c) => c.name === col.id)?.label ?? col.id}
-                  </DropdownMenuCheckboxItem>
-                ))}
+              <DragDropContext onDragEnd={handleColumnDragEnd}>
+                <Droppable droppableId="custom-table-column-order">
+                  {(droppableProvided) => (
+                    <div
+                      ref={droppableProvided.innerRef}
+                      {...droppableProvided.droppableProps}
+                    >
+                      {columnOrder.map((colId, index) => {
+                        const col = table.getColumn(colId);
+                        if (!col || !col.getCanHide()) return null;
+                        const label =
+                          colDefs.find((c) => c.name === colId)?.label ??
+                          colId;
+                        return (
+                          <Draggable
+                            key={colId}
+                            draggableId={colId}
+                            index={index}
+                          >
+                            {(dragProvided, snapshot) => (
+                              <div
+                                ref={dragProvided.innerRef}
+                                {...dragProvided.draggableProps}
+                                style={{ ...dragProvided.draggableProps.style }}
+                                className={cn(
+                                  "flex items-center gap-1.5 rounded-sm px-1.5 py-1.5 text-xs",
+                                  snapshot.isDragging && "bg-muted",
+                                )}
+                              >
+                                <span
+                                  {...dragProvided.dragHandleProps}
+                                  className="cursor-grab text-muted-foreground/60 hover:text-muted-foreground"
+                                >
+                                  <GripVertical className="size-3.5" />
+                                </span>
+                                <Checkbox
+                                  checked={col.getIsVisible()}
+                                  onCheckedChange={(v) =>
+                                    col.toggleVisibility(!!v)
+                                  }
+                                />
+                                <span className="capitalize select-none">
+                                  {label}
+                                </span>
+                              </div>
+                            )}
+                          </Draggable>
+                        );
+                      })}
+                      {droppableProvided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
             </DropdownMenuContent>
           </DropdownMenu>
 
@@ -277,6 +480,24 @@ const CustomTable = <TData extends Record<string, any>>({
         </div>
       </div>
 
+      {/* Select-all-across-pages prompt */}
+      {canSelectAllMatching && (
+        <div className="flex items-center justify-center gap-2 border-b bg-primary/5 px-4 py-2 text-xs">
+          <span className="text-muted-foreground">
+            All {visibleRowIds.length} on this page are selected.
+          </span>
+          <button
+            onClick={handleSelectAllMatching}
+            disabled={selectAllLoading}
+            className="font-medium text-primary hover:underline disabled:opacity-50"
+          >
+            {selectAllLoading
+              ? "Selecting…"
+              : `Select all ${rowSelection!.totalMatching} rows`}
+          </button>
+        </div>
+      )}
+
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
@@ -285,6 +506,16 @@ const CustomTable = <TData extends Record<string, any>>({
               <React.Fragment key={headerGroup.id}>
                 {/* Column headers */}
                 <tr className="border-b bg-muted/50">
+                  {rowSelection && (
+                    <th className="px-4 py-3 w-10">
+                      <Checkbox
+                        checked={allOnPageSelected}
+                        indeterminate={someOnPageSelected}
+                        onCheckedChange={toggleSelectAllOnPage}
+                        aria-label="Select all rows on this page"
+                      />
+                    </th>
+                  )}
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
@@ -323,6 +554,7 @@ const CustomTable = <TData extends Record<string, any>>({
                 {/* Per-column filter inputs */}
                 {showColumnFilters && (
                   <tr className="border-b bg-muted/20">
+                    {rowSelection && <th className="px-3 py-2" />}
                     {headerGroup.headers.map((header) => {
                       const serverFilter =
                         serverSide?.columnFilters?.[header.id];
@@ -418,28 +650,56 @@ const CustomTable = <TData extends Record<string, any>>({
             {table.getRowModel().rows.length === 0 ? (
               <tr>
                 <td
-                  colSpan={table.getVisibleLeafColumns().length}
+                  colSpan={
+                    table.getVisibleLeafColumns().length +
+                    (rowSelection ? 1 : 0)
+                  }
                   className="px-4 py-8 text-center text-muted-foreground"
                 >
                   No records found
                 </td>
               </tr>
             ) : (
-              table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className="border-b last:border-0 hover:bg-muted/30 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id} className="px-4 py-3 whitespace-nowrap">
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              table.getRowModel().rows.map((row) => {
+                const rowId = rowSelection
+                  ? rowSelection.getRowId(row.original)
+                  : undefined;
+                return (
+                  <tr
+                    key={row.id}
+                    onClick={
+                      onRowClick
+                        ? () => onRowClick(row.original)
+                        : undefined
+                    }
+                    className={cn(
+                      "border-b last:border-0 hover:bg-muted/30 transition-colors",
+                      onRowClick && "cursor-pointer",
+                    )}
+                  >
+                    {rowSelection && (
+                      <td
+                        className="px-4 py-3 w-10"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={rowSelection.selectedIds.includes(rowId!)}
+                          onCheckedChange={() => toggleSelectRow(rowId!)}
+                          aria-label="Select row"
+                        />
+                      </td>
+                    )}
+                    {row.getVisibleCells().map((cell) => (
+                      <td key={cell.id} className="px-4 py-3 whitespace-nowrap">
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </td>
+                    ))}
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -447,9 +707,31 @@ const CustomTable = <TData extends Record<string, any>>({
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-4 py-3 border-t text-xs text-muted-foreground flex-wrap gap-2">
-        <span>
-          {from}–{to} of {totalRows} rows
-        </span>
+        <div className="flex items-center gap-3">
+          <span>
+            {from}–{to} of {totalRows} rows
+          </span>
+          {serverSide?.onPageSizeChange && (
+            <span className="flex items-center gap-1.5">
+              Show
+              <Input
+                value={pageSizeInput}
+                onChange={(e) =>
+                  setPageSizeInput(e.target.value.replace(/[^0-9]/g, ""))
+                }
+                onBlur={commitPageSize}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.currentTarget.blur();
+                  }
+                }}
+                inputMode="numeric"
+                className="h-6 w-14 px-1.5 text-xs text-center"
+              />
+              per page
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-1">
           <Button
             variant="outline"

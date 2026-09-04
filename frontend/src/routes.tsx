@@ -39,6 +39,7 @@ const Profile = Loadable(lazy(() => import("./pages/admin/profile")));
 
 const Contacts = Loadable(lazy(() => import("./pages/admin/contacts")));
 const AddContact = Loadable(lazy(() => import("./pages/admin/contacts/add")));
+const Tags = Loadable(lazy(() => import("./pages/admin/contacts/tags")));
 const Tickets = Loadable(lazy(() => import("./pages/admin/tickets")));
 const AddTicket = Loadable(lazy(() => import("./pages/admin/tickets/add")));
 
@@ -49,8 +50,10 @@ const EmailTemplates = Loadable(
   lazy(() => import("./pages/admin/emails/templates")),
 );
 const EmailGroups = Loadable(lazy(() => import("./pages/admin/emails/groups")));
+const EmailsSent = Loadable(lazy(() => import("./pages/admin/emails/sent")));
 const Pipeline = Loadable(lazy(() => import("./pages/admin/pipeline")));
 const Dashboard = Loadable(lazy(() => import("./pages/admin/dashboard")));
+const Planner = Loadable(lazy(() => import("./pages/admin/planner")));
 
 const ErrorPage = Loadable(lazy(() => import("./pages/others/ErrorPage")));
 
@@ -139,6 +142,11 @@ const routes = [
         children: [{ index: true, element: <AddContact /> }],
       },
       {
+        path: "contacts/tags",
+        element: <RequirePermission permission="contacts-edit" />,
+        children: [{ index: true, element: <Tags /> }],
+      },
+      {
         path: "tickets",
         element: <RequirePermission permission="tickets-view" />,
         children: [{ index: true, element: <Tickets /> }],
@@ -147,6 +155,11 @@ const routes = [
         path: "tickets/add-ticket",
         element: <RequirePermission permission="tickets-edit" />,
         children: [{ index: true, element: <AddTicket /> }],
+      },
+      {
+        path: "planner",
+        element: <RequirePermission permission="projects-view" />,
+        children: [{ index: true, element: <Planner /> }],
       },
       {
         path: "todos",
@@ -165,6 +178,7 @@ const routes = [
           { index: true, element: <Navigate to="templates" replace /> },
           { path: "templates", element: <EmailTemplates /> },
           { path: "groups", element: <EmailGroups /> },
+          { path: "sent", element: <EmailsSent /> },
         ],
       },
       {

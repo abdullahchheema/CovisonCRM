@@ -219,7 +219,25 @@ const ToolbarPlugin = () => {
 
 // ── Composed plugins ───────────────────────────────────────────────────────────
 
-export function Plugins() {
+// Exposes the underlying Lexical editor instance to the parent so it can
+// imperatively insert text (e.g. {{name}} placeholders) at the cursor.
+const EditorMountPlugin = ({
+  onEditorMount,
+}: {
+  onEditorMount?: (editor: ReturnType<typeof useLexicalComposerContext>[0]) => void;
+}) => {
+  const [editor] = useLexicalComposerContext();
+  useEffect(() => {
+    onEditorMount?.(editor);
+  }, [editor, onEditorMount]);
+  return null;
+};
+
+export function Plugins({
+  onEditorMount,
+}: {
+  onEditorMount?: (editor: ReturnType<typeof useLexicalComposerContext>[0]) => void;
+}) {
   const [floatingAnchorElem, setFloatingAnchorElem] =
     useState<HTMLDivElement | null>(null);
 
@@ -233,6 +251,7 @@ export function Plugins() {
     <div className="relative">
       <ToolbarPlugin />
       <HistoryPlugin />
+      <EditorMountPlugin onEditorMount={onEditorMount} />
       <div className="relative">
         <RichTextPlugin
           contentEditable={

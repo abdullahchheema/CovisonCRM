@@ -13,6 +13,8 @@ import {
   ChevronDown,
   Kanban,
   LayoutDashboard,
+  Send,
+  ListTodo,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -63,7 +65,7 @@ const Topbar = ({ handleDrawerToggle }: TopbarProps) => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-background/95 backdrop-blur border-b flex items-center px-4 gap-4">
+    <header className="fixed top-0 left-0 right-0 z-50 h-14 bg-background/80 backdrop-blur-md border-b border-border/60 shadow-sm flex items-center px-4 gap-4">
       {/* Mobile hamburger */}
       <Button
         size="icon-sm"
@@ -161,6 +163,12 @@ export const menuContents: NavItem[] = [
     permission: "pipeline-view",
   },
   {
+    title: "Planner",
+    link: "/dashboard/planner",
+    icon: <ListTodo className="h-4 w-4" />,
+    permission: "projects-view",
+  },
+  {
     title: "Tickets",
     link: "/dashboard/tickets",
     icon: <TicketCheck className="h-4 w-4" />,
@@ -188,6 +196,12 @@ export const menuContents: NavItem[] = [
         title: "Groups",
         link: "/dashboard/emails/groups",
         icon: <BookUser className="h-4 w-4" />,
+        permission: "admin",
+      },
+      {
+        title: "Sent",
+        link: "/dashboard/emails/sent",
+        icon: <Send className="h-4 w-4" />,
         permission: "admin",
       },
     ],

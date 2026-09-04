@@ -129,6 +129,7 @@ const TemplateDialog = ({
       trigger={trigger}
       size="xl"
       contentClassName="max-h-[90vh] overflow-y-auto"
+      disableOutsideClose
     >
       <form onSubmit={handleSubmit} className="space-y-5 pt-1">
         <div className="grid grid-cols-2 gap-4">
@@ -246,7 +247,8 @@ const TemplateDialog = ({
             <p className="text-xs text-destructive">{errors.body}</p>
           )}
           <p className="text-xs text-muted-foreground pl-0.5">
-            Dynamic variables: {"{{name}}"}, {"{{email}}"}, {"{{date}}"}
+            Dynamic variables: {"{{name}}"}, {"{{email}}"}, {"{{company}}"},{" "}
+            {"{{jobTitle}}"}, {"{{date}}"}
           </p>
         </div>
 

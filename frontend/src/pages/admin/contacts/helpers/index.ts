@@ -11,6 +11,12 @@ export const makeEmptyContact = () => ({
   probability: "0.5",
   status: "new",
   lastActivity: new Date().toISOString(),
+  linkedinUrl: "",
+  website: "",
+  country: "",
+  city: "",
+  niche: "",
+  tagIds: [] as string[],
 });
 
 export const contactValidationSchema = Yup.object().shape({
@@ -23,4 +29,9 @@ export const contactValidationSchema = Yup.object().shape({
   companySize: Yup.number().min(0).nullable(),
   probability: Yup.string(),
   status: Yup.string().required("Status is required"),
+  linkedinUrl: Yup.string(),
+  website: Yup.string(),
+  country: Yup.string(),
+  city: Yup.string(),
+  niche: Yup.string(),
 });

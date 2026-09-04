@@ -6,3 +6,4 @@ export * from "./AuthCard";
 export { default as AuthorAvatar } from "./AuthorAvatar";
 export * from "./PriorityIndicator";
 export * from "./StatusBadge";
+export * from "./Tag";

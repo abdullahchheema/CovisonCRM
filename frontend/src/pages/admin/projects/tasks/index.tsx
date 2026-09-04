@@ -6,9 +6,13 @@ import * as Yup from "yup";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { PriorityIndicator } from "@/components/common";
 
 import {
   CustomTextField,
+  CustomTextAreaField,
+  CustomSelectField,
+  DatePicker,
   PageSpinner,
   CustomEmptyState,
   PageHeader,
@@ -17,6 +21,8 @@ import {
 } from "@/components/custom";
 import { apiProvider } from "@/services/utilities/provider";
 import usePermissions from "@/hooks/usePermissions";
+import { useEnums } from "@/hooks/useEnums";
+import { toLabelItems, convertDateToDateWithoutTime } from "@/utils";
 import { Project } from "../types";
 import { RowActionsMenu } from "../components/RowActionsMenu";
 import { confirmToast } from "@/utils/confirmToast";
@@ -53,10 +59,13 @@ const Todos = () => {
     });
   };
 
-  const handleCreate = (name: string) => {
-    apiProvider.post("projects/", { name }, "", true).then((res) => {
+  const handleCreate = (values: ProjectFormValues) => {
+    apiProvider.post("projects/", values, "", true).then((res) => {
       if (res?._id) {
-        setProjects((prev) => [...prev, res]);
+        setProjects((prev) => [
+          ...prev,
+          { ...res, totalTasks: res.totalTasks ?? 0, doneTasks: res.doneTasks ?? 0 },
+        ]);
         setShowForm(false);
         toast.success("Project created");
       } else {
@@ -65,16 +74,16 @@ const Todos = () => {
     });
   };
 
-  const handleRename = (id: string, name: string) => {
-    apiProvider.put("projects", { name }, id, true).then((res) => {
+  const handleUpdate = (id: string, values: ProjectFormValues) => {
+    apiProvider.put("projects", values, id, true).then((res) => {
       if (res?._id || res?.name) {
         setProjects((prev) =>
-          prev.map((p) => (p._id === id ? { ...p, name } : p)),
+          prev.map((p) => (p._id === id ? { ...p, ...values } : p)),
         );
         setEditingProject(null);
-        toast.success("Project renamed");
+        toast.success("Project updated");
       } else {
-        toast.error(res?.message ?? "Failed to rename project");
+        toast.error(res?.message ?? "Failed to update project");
       }
     });
   };
@@ -100,7 +109,7 @@ const Todos = () => {
         open={showForm}
         onOpenChange={(open) => !open && setShowForm(false)}
       >
-        <ProjectNameForm
+        <ProjectForm
           submitLabel="Create"
           onSubmit={handleCreate}
           onCancel={() => setShowForm(false)}
@@ -108,16 +117,26 @@ const Todos = () => {
       </CustomModal>
 
       <CustomModal
-        title="Rename Project"
+        title="Edit Project"
         size="sm"
         open={!!editingProject}
         onOpenChange={(open) => !open && setEditingProject(null)}
       >
         {editingProject && (
-          <ProjectNameForm
+          <ProjectForm
             submitLabel="Save"
-            initialName={editingProject.name}
-            onSubmit={(name) => handleRename(editingProject._id, name)}
+            initialValues={{
+              name: editingProject.name,
+              description: editingProject.description ?? "",
+              priority: editingProject.priority ?? "",
+              startDate: editingProject.startDate
+                ? editingProject.startDate.slice(0, 10)
+                : "",
+              expectedEndDate: editingProject.expectedEndDate
+                ? editingProject.expectedEndDate.slice(0, 10)
+                : "",
+            }}
+            onSubmit={(values) => handleUpdate(editingProject._id, values)}
             onCancel={() => setEditingProject(null)}
           />
         )}
@@ -163,6 +182,31 @@ const Todos = () => {
                     />
                   )}
                 </div>
+
+                {project.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {project.description}
+                  </p>
+                )}
+
+                {(project.priority || project.startDate || project.expectedEndDate) && (
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                    {project.priority && (
+                      <PriorityIndicator value={project.priority} />
+                    )}
+                    {project.startDate && (
+                      <span>
+                        Start: {convertDateToDateWithoutTime(project.startDate)}
+                      </span>
+                    )}
+                    {project.expectedEndDate && (
+                      <span>
+                        Due: {convertDateToDateWithoutTime(project.expectedEndDate)}
+                      </span>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-xs text-muted-foreground">
                   {project.totalTasks} task
                   {project.totalTasks !== 1 ? "s" : ""} · {project.doneTasks}{" "}
@@ -200,29 +244,52 @@ const Todos = () => {
 
 export default Todos;
 
-const ProjectNameForm = ({
+export type ProjectFormValues = {
+  name: string;
+  description: string;
+  priority: string;
+  startDate: string;
+  expectedEndDate: string;
+};
+
+const emptyProjectForm: ProjectFormValues = {
+  name: "",
+  description: "",
+  priority: "",
+  startDate: "",
+  expectedEndDate: "",
+};
+
+const ProjectForm = ({
   submitLabel,
-  initialName = "",
+  initialValues = emptyProjectForm,
   onSubmit,
   onCancel,
 }: {
   submitLabel: string;
-  initialName?: string;
-  onSubmit: (name: string) => void;
+  initialValues?: ProjectFormValues;
+  onSubmit: (values: ProjectFormValues) => void;
   onCancel: () => void;
 }) => {
-  const { values, errors, touched, handleChange, handleSubmit } = useFormik({
-    initialValues: { name: initialName },
-    enableReinitialize: true,
-    validationSchema: Yup.object({
-      name: Yup.string().min(2, "Too short").required("Name is required"),
-    }),
-    onSubmit: (v) => onSubmit(v.name),
-  });
+  const { contactPriorities } = useEnums();
+  const { values, errors, touched, handleChange, handleSubmit, setFieldValue } =
+    useFormik<ProjectFormValues>({
+      initialValues,
+      enableReinitialize: true,
+      validationSchema: Yup.object({
+        name: Yup.string().min(2, "Too short").required("Name is required"),
+        description: Yup.string(),
+        priority: Yup.string(),
+        startDate: Yup.string(),
+        expectedEndDate: Yup.string(),
+      }),
+      onSubmit,
+    });
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <CustomTextField
+        label="Project Title"
         name="name"
         placeholder="Project name"
         values={values}
@@ -230,6 +297,44 @@ const ProjectNameForm = ({
         touched={touched}
         errors={errors}
       />
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-medium">Description</label>
+        <CustomTextAreaField
+          name="description"
+          placeholder="What's this project about?"
+          values={values}
+          handleChange={handleChange}
+          touched={touched}
+          errors={errors}
+          rows={3}
+        />
+      </div>
+      <CustomSelectField
+        label="Priority"
+        name="priority"
+        placeholder="priority"
+        values={values}
+        handleChange={handleChange}
+        touched={touched}
+        errors={errors}
+        labelItms={toLabelItems(contactPriorities)}
+      />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">Start Date</label>
+          <DatePicker
+            value={values.startDate}
+            onChange={(v) => setFieldValue("startDate", v)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <label className="text-sm font-medium">Expected End Date</label>
+          <DatePicker
+            value={values.expectedEndDate}
+            onChange={(v) => setFieldValue("expectedEndDate", v)}
+          />
+        </div>
+      </div>
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onCancel}>
           Cancel

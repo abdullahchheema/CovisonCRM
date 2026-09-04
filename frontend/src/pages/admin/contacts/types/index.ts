@@ -21,6 +21,13 @@ export interface IContact {
   priority?: string;
   companySize?: number;
   probability?: string;
+  linkedinUrl?: string;
+  website?: string;
+  country?: string;
+  city?: string;
+  niche?: string;
+  tags?: { _id: string; name: string; color: string }[];
+  tagIds?: string[];
 }
 
 export type Tab = "activity" | "notes" | "deals" | "edit";
