@@ -41,6 +41,8 @@ interface ContactRow {
   owner_id: string | null;
 }
 
+type SortKey = "name" | "email" | "job_title" | "status";
+
 interface Tag {
   id: string;
   name: string;
@@ -77,6 +79,7 @@ export function ContactsTable({
   const [bulkTagOpen, setBulkTagOpen] = useState(false);
   const [bulkTagId, setBulkTagId] = useState("");
   const [isBulkTagging, setIsBulkTagging] = useState(false);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -95,14 +98,36 @@ export function ContactsTable({
     });
   }, [contacts, search, status, tagFilter, tagsByContactId, onlyMine, currentUserId]);
 
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    const { key, dir } = sort;
+    const factor = dir === "asc" ? 1 : -1;
+    return [...filtered].sort((a, b) => {
+      const aValue = key === "status" ? (STATUS_LABELS[a.status] ?? a.status) : (a[key] ?? "");
+      const bValue = key === "status" ? (STATUS_LABELS[b.status] ?? b.status) : (b[key] ?? "");
+      return aValue.localeCompare(bValue) * factor;
+    });
+  }, [filtered, sort]);
+
+  const toggleSort = (key: SortKey) => {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  };
+
+  const sortIndicator = (key: SortKey) =>
+    sort?.key === key ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+
   const allVisibleSelected =
-    filtered.length > 0 && filtered.every((contact) => selected.has(contact.id));
+    sorted.length > 0 && sorted.every((contact) => selected.has(contact.id));
 
   const toggleAll = () => {
     if (allVisibleSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map((contact) => contact.id)));
+      setSelected(new Set(sorted.map((contact) => contact.id)));
     }
   };
 
@@ -170,7 +195,7 @@ export function ContactsTable({
 
   const exportCsv = () => {
     const header = ["Name", "Email", "Phone", "Job title", "Status", "Tags", "Company", "Owner"];
-    const rows = filtered.map((contact) => [
+    const rows = sorted.map((contact) => [
       contact.name,
       contact.email ?? "",
       contact.phone ?? "",
@@ -336,17 +361,49 @@ export function ContactsTable({
                     aria-label="Select all"
                   />
                 </th>
-                <th className="px-4 py-3 font-medium">Name</th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("name")}
+                    className="hover:text-foreground"
+                  >
+                    Name{sortIndicator("name")}
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium">Company</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Job title</th>
-                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("email")}
+                    className="hover:text-foreground"
+                  >
+                    Email{sortIndicator("email")}
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("job_title")}
+                    className="hover:text-foreground"
+                  >
+                    Job title{sortIndicator("job_title")}
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("status")}
+                    className="hover:text-foreground"
+                  >
+                    Status{sortIndicator("status")}
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium">Tags</th>
                 <th className="px-4 py-3 font-medium">Owner</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((contact) => (
+              {sorted.map((contact) => (
                 <tr key={contact.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     <input

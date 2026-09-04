@@ -21,6 +21,8 @@ function toCsvValue(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
+type SortKey = "name" | "domain" | "industry";
+
 interface CompanyRow {
   id: string;
   name: string;
@@ -47,6 +49,7 @@ export function CompaniesTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -61,14 +64,34 @@ export function CompaniesTable({
     });
   }, [companies, search, onlyMine, currentUserId]);
 
+  const sorted = useMemo(() => {
+    if (!sort) return filtered;
+    const { key, dir } = sort;
+    const factor = dir === "asc" ? 1 : -1;
+    return [...filtered].sort(
+      (a, b) => (a[key] ?? "").localeCompare(b[key] ?? "") * factor,
+    );
+  }, [filtered, sort]);
+
+  const toggleSort = (key: SortKey) => {
+    setSort((prev) => {
+      if (!prev || prev.key !== key) return { key, dir: "asc" };
+      if (prev.dir === "asc") return { key, dir: "desc" };
+      return null;
+    });
+  };
+
+  const sortIndicator = (key: SortKey) =>
+    sort?.key === key ? (sort.dir === "asc" ? " ▲" : " ▼") : "";
+
   const allVisibleSelected =
-    filtered.length > 0 && filtered.every((company) => selected.has(company.id));
+    sorted.length > 0 && sorted.every((company) => selected.has(company.id));
 
   const toggleAll = () => {
     if (allVisibleSelected) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(filtered.map((company) => company.id)));
+      setSelected(new Set(sorted.map((company) => company.id)));
     }
   };
 
@@ -107,7 +130,7 @@ export function CompaniesTable({
 
   const exportCsv = () => {
     const header = ["Name", "Domain", "Phone", "Industry", "Owner"];
-    const rows = filtered.map((company) => [
+    const rows = sorted.map((company) => [
       company.name,
       company.domain ?? "",
       company.phone ?? "",
@@ -213,15 +236,39 @@ export function CompaniesTable({
                     aria-label="Select all"
                   />
                 </th>
-                <th className="px-4 py-3 font-medium">Name</th>
-                <th className="px-4 py-3 font-medium">Domain</th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("name")}
+                    className="hover:text-foreground"
+                  >
+                    Name{sortIndicator("name")}
+                  </button>
+                </th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("domain")}
+                    className="hover:text-foreground"
+                  >
+                    Domain{sortIndicator("domain")}
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium">Phone</th>
-                <th className="px-4 py-3 font-medium">Industry</th>
+                <th className="px-4 py-3 font-medium">
+                  <button
+                    type="button"
+                    onClick={() => toggleSort("industry")}
+                    className="hover:text-foreground"
+                  >
+                    Industry{sortIndicator("industry")}
+                  </button>
+                </th>
                 <th className="px-4 py-3 font-medium">Owner</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((company) => (
+              {sorted.map((company) => (
                 <tr key={company.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-3">
                     <input
