@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
 export function LoginForm({
@@ -26,6 +26,9 @@ export function LoginForm({
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
+  // Set by proxy.ts when it redirects a signed-out visit here (e.g. an
+  // /invite/:token link) — falls back to /dashboard for a direct visit.
+  const next = useSearchParams().get("next") || "/dashboard";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +42,7 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
-      router.push("/dashboard");
+      router.push(next);
       router.refresh();
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
@@ -56,7 +59,7 @@ export function LoginForm({
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
+        redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
       },
     });
 
@@ -139,7 +142,7 @@ export function LoginForm({
               <div className="mt-4 text-center text-sm">
                 Don&apos;t have an account?{" "}
                 <Link
-                  href="/auth/sign-up"
+                  href={`/auth/sign-up?next=${encodeURIComponent(next)}`}
                   className="underline underline-offset-4"
                 >
                   Sign up

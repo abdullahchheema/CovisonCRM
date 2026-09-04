@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/pipeline", label: "Pipeline" },
   { href: "/tasks", label: "Tasks" },
   { href: "/tags", label: "Tags" },
+  { href: "/team", label: "Team" },
 ];
 
 export default async function AppLayout({

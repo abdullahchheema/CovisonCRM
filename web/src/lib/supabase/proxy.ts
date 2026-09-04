@@ -65,8 +65,14 @@ export async function updateSession(request: NextRequest) {
   const user = data?.claims;
 
   if (!user && !isPublicPath(request.nextUrl.pathname)) {
+    // Preserve where the user was headed (e.g. an /invite/:token link) so
+    // the login/sign-up forms can send them back there instead of always
+    // landing on /dashboard.
+    const originalPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
+    url.search = "";
+    url.searchParams.set("next", originalPath);
     return NextResponse.redirect(url);
   }
 
