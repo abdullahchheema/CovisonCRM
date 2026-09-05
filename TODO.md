@@ -20,11 +20,16 @@ deleting them, so history of what shipped stays visible.
 
 ## In progress / next up
 
-- [ ] Bulk delete on tasks — its rows are a card list (TaskRow), not a
-      checkbox-table like contacts/companies/tickets, so this needs a
-      small layout change first rather than being prop-plumbing.
-- [ ] CSV import for companies (contacts is the only entity with import
-      so far).
+Every list view (contacts, companies, deals, tickets, tasks) now has the
+same baseline: search/filters, saved views, CSV export, and bulk delete
+where the layout supports it. Nothing queued here right now — next
+candidates are either in Deferred below (bigger scope, external
+accounts) or worth asking the user for direction on:
+
+- [ ] Ticket/task bulk status-change (not just delete) — e.g. select
+      several tickets and set status to "resolved" in one action.
+- [ ] Deals: bulk delete on the pipeline board (cards aren't a
+      checkbox-table either — same shape of change as tasks was).
 
 ## Deferred — needs an external account or a bigger schema decision
 
@@ -38,6 +43,9 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] Bulk delete on tasks (TaskRow gained an optional selection
+      checkbox).
+- [x] CSV import for companies.
 - [x] Search, CSV export, and saved views on the pipeline board (deals) —
       the last list view without this treatment.
 - [x] CSV export on tickets and tasks; bulk delete + select-all on
