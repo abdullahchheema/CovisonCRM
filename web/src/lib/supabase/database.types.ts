@@ -874,6 +874,51 @@ export type Database = {
         };
         Relationships: [];
       };
+      notifications: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          actor_id: string | null;
+          type: string;
+          title: string;
+          body: string | null;
+          link: string | null;
+          entity_type: string | null;
+          entity_id: string | null;
+          read_at: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          actor_id?: string | null;
+          type: string;
+          title: string;
+          body?: string | null;
+          link?: string | null;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          user_id?: string;
+          actor_id?: string | null;
+          type?: string;
+          title?: string;
+          body?: string | null;
+          link?: string | null;
+          entity_type?: string | null;
+          entity_id?: string | null;
+          read_at?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {

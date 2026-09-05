@@ -1,6 +1,7 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { LogoutButton } from "@/components/logout-button";
 import { CommandPalette } from "@/components/command-palette";
+import { NotificationBell } from "@/components/notification-bell";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 
@@ -75,6 +76,7 @@ export default async function AppLayout({
             <span className="text-sm text-muted-foreground">
               {profile.email}
             </span>
+            <NotificationBell />
             <ThemeToggle />
             <LogoutButton />
           </div>
