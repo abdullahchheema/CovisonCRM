@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 
 interface AddNoteFormProps {
@@ -47,12 +48,11 @@ export function AddNoteForm({ organizationId, parent }: AddNoteFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-2">
-      <textarea
+      <Textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}
         placeholder="Add a note..."
         rows={3}
-        className="flex w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
       />
       <Button type="submit" size="sm" className="self-end" disabled={isSubmitting}>
         {isSubmitting ? "Adding..." : "Add note"}

@@ -5,12 +5,26 @@ import { TicketEditDialog } from "@/components/tickets/ticket-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { Separator } from "@/components/ui/separator";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 import {
   CATEGORY_LABELS,
   PRIORITY_LABELS,
+  PRIORITY_VARIANT,
   STATUS_LABELS,
+  STATUS_VARIANT,
 } from "@/components/tickets/ticket-options";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="text-right text-foreground">{value}</dd>
+    </div>
+  );
+}
 
 export default async function TicketDetailPage({
   params,
@@ -59,76 +73,89 @@ export default async function TicketDetailPage({
   const actorEmailById = new Map((actorProfiles ?? []).map((p) => [p.id, p.email]));
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{ticket.title}</h1>
-          {contactName && (
-            <Link
-              href={`/contacts/${ticket.contact_id}`}
-              className="text-sm text-muted-foreground hover:underline"
-            >
+    <div>
+      <PageHeader
+        align="start"
+        title={ticket.title}
+        description={
+          contactName ? (
+            <Link href={`/contacts/${ticket.contact_id}`} className="hover:underline">
               {contactName}
             </Link>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <TicketEditDialog ticket={ticket} contacts={contacts ?? []} members={members} />
-          <SoftDeleteButton
-            table="tickets"
-            id={ticket.id}
-            label="Ticket"
-            redirectTo="/tickets"
+          ) : undefined
+        }
+        actions={
+          <>
+            <TicketEditDialog ticket={ticket} contacts={contacts ?? []} members={members} />
+            <SoftDeleteButton
+              table="tickets"
+              id={ticket.id}
+              label="Ticket"
+              redirectTo="/tickets"
+            />
+          </>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Activity
+          </h2>
+          <div className="mb-5">
+            <AddNoteForm organizationId={org.id} parent={{ ticket_id: ticket.id }} />
+          </div>
+          <ActivityTimeline
+            activities={(activityRows ?? []).map((a) => ({
+              id: a.id,
+              type: a.type,
+              body: a.body,
+              occurred_at: a.occurred_at,
+              actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+            }))}
           />
         </div>
-      </div>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Details</h2>
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Category</dt>
-            <dd className="text-foreground">{CATEGORY_LABELS[ticket.category] ?? ticket.category}</dd>
+        <div className="flex flex-col gap-5 rounded-xl bg-surface-2 p-5">
+          <div>
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Details
+            </h2>
+            <dl className="flex flex-col gap-2">
+              <Field label="Category" value={CATEGORY_LABELS[ticket.category] ?? ticket.category} />
+              <Field
+                label="Priority"
+                value={
+                  <Badge variant={PRIORITY_VARIANT[ticket.priority] ?? "neutral"}>
+                    {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
+                  </Badge>
+                }
+              />
+              <Field
+                label="Status"
+                value={
+                  <Badge variant={STATUS_VARIANT[ticket.status] ?? "neutral"}>
+                    {STATUS_LABELS[ticket.status] ?? ticket.status}
+                  </Badge>
+                }
+              />
+              <Field label="Reporter email" value={ticket.email ?? "—"} />
+              <Field label="Assigned to" value={assigneeName ?? "Unassigned"} />
+            </dl>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Priority</dt>
-            <dd className="text-foreground">{PRIORITY_LABELS[ticket.priority] ?? ticket.priority}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Status</dt>
-            <dd className="text-foreground">{STATUS_LABELS[ticket.status] ?? ticket.status}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Reporter email</dt>
-            <dd className="text-foreground">{ticket.email ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Assigned to</dt>
-            <dd className="text-foreground">{assigneeName ?? "Unassigned"}</dd>
-          </div>
-        </dl>
-        {ticket.description && (
-          <div className="mt-4 border-t border-border pt-4">
-            <p className="mb-1 text-sm text-muted-foreground">Description</p>
-            <p className="whitespace-pre-wrap text-sm text-foreground">{ticket.description}</p>
-          </div>
-        )}
-      </div>
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="mb-4">
-          <AddNoteForm organizationId={org.id} parent={{ ticket_id: ticket.id }} />
+          {ticket.description && (
+            <>
+              <Separator />
+              <div>
+                <h2 className="mb-2 text-xs font-medium uppercase tracking-wide text-text-2">
+                  Description
+                </h2>
+                <p className="whitespace-pre-wrap text-sm text-foreground">{ticket.description}</p>
+              </div>
+            </>
+          )}
         </div>
-        <ActivityTimeline
-          activities={(activityRows ?? []).map((a) => ({
-            id: a.id,
-            type: a.type,
-            body: a.body,
-            occurred_at: a.occurred_at,
-            actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
-          }))}
-        />
       </div>
     </div>
   );

@@ -5,7 +5,18 @@ import { CompanyEditDialog } from "@/components/companies/company-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { PageHeader } from "@/components/ui/page-header";
+import { Separator } from "@/components/ui/separator";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="text-right text-foreground">{value}</dd>
+    </div>
+  );
+}
 
 export default async function CompanyDetailPage({
   params,
@@ -55,83 +66,78 @@ export default async function CompanyDetailPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{company.name}</h1>
-          {company.domain && (
-            <p className="text-sm text-muted-foreground">{company.domain}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <CompanyEditDialog company={company} members={members} />
-          <SoftDeleteButton
-            table="companies"
-            id={company.id}
-            label="Company"
-            redirectTo="/companies"
+    <div>
+      <PageHeader
+        align="start"
+        title={company.name}
+        description={company.domain}
+        actions={
+          <>
+            <CompanyEditDialog company={company} members={members} />
+            <SoftDeleteButton
+              table="companies"
+              id={company.id}
+              label="Company"
+              redirectTo="/companies"
+            />
+          </>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Activity
+          </h2>
+          <div className="mb-5">
+            <AddNoteForm organizationId={org.id} parent={{ company_id: company.id }} />
+          </div>
+          <ActivityTimeline
+            activities={(activityRows ?? []).map((a) => ({
+              id: a.id,
+              type: a.type,
+              body: a.body,
+              occurred_at: a.occurred_at,
+              actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+            }))}
           />
         </div>
-      </div>
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Details</h2>
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Website</dt>
-            <dd className="text-foreground">{company.website ?? "—"}</dd>
+        <div className="flex flex-col gap-5 rounded-xl bg-surface-2 p-5">
+          <div>
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Details
+            </h2>
+            <dl className="flex flex-col gap-2">
+              <Field label="Website" value={company.website ?? "—"} />
+              <Field label="Phone" value={company.phone ?? "—"} />
+              <Field label="Industry" value={company.industry ?? "—"} />
+              <Field label="Owner" value={ownerName ?? "Unassigned"} />
+            </dl>
           </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Phone</dt>
-            <dd className="text-foreground">{company.phone ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Industry</dt>
-            <dd className="text-foreground">{company.industry ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Owner</dt>
-            <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
-          </div>
-        </dl>
-      </div>
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">
-          Contacts ({(contacts ?? []).length})
-        </h2>
-        {(contacts ?? []).length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No contacts at this company yet.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {(contacts ?? []).map((contact) => (
-              <li key={contact.id} className="flex items-center justify-between text-sm">
-                <Link href={`/contacts/${contact.id}`} className="text-foreground hover:underline">
-                  {contact.name}
-                </Link>
-                <span className="text-muted-foreground">{contact.email ?? "—"}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          <Separator />
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="mb-4">
-          <AddNoteForm organizationId={org.id} parent={{ company_id: company.id }} />
+          <div>
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Contacts ({(contacts ?? []).length})
+            </h2>
+            {(contacts ?? []).length === 0 ? (
+              <p className="text-sm text-text-2">No contacts at this company yet.</p>
+            ) : (
+              <ul className="flex flex-col gap-2">
+                {(contacts ?? []).map((contact) => (
+                  <li key={contact.id} className="flex items-center justify-between text-sm">
+                    <Link href={`/contacts/${contact.id}`} className="text-foreground hover:underline">
+                      {contact.name}
+                    </Link>
+                    <span className="text-text-3">{contact.email ?? "—"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-        <ActivityTimeline
-          activities={(activityRows ?? []).map((a) => ({
-            id: a.id,
-            type: a.type,
-            body: a.body,
-            occurred_at: a.occurred_at,
-            actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
-          }))}
-        />
       </div>
     </div>
   );

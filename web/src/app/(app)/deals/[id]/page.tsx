@@ -5,7 +5,17 @@ import { DealEditDialog } from "@/components/deals/deal-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { PageHeader } from "@/components/ui/page-header";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="text-right text-foreground">{value}</dd>
+    </div>
+  );
+}
 
 export default async function DealDetailPage({
   params,
@@ -65,81 +75,78 @@ export default async function DealDetailPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{deal.name}</h1>
-          <p className="text-sm text-muted-foreground">{stage?.name ?? "—"}</p>
-        </div>
-        <div className="flex gap-2">
-          <DealEditDialog deal={deal} contacts={contacts ?? []} companies={companies ?? []} members={members} />
-          <SoftDeleteButton table="deals" id={deal.id} label="Deal" redirectTo="/pipeline" />
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        align="start"
+        title={deal.name}
+        description={stage?.name ?? "—"}
+        actions={
+          <>
+            <DealEditDialog deal={deal} contacts={contacts ?? []} companies={companies ?? []} members={members} />
+            <SoftDeleteButton table="deals" id={deal.id} label="Deal" redirectTo="/pipeline" />
+          </>
+        }
+      />
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Details</h2>
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Value</dt>
-            <dd className="text-foreground">
-              {new Intl.NumberFormat(undefined, {
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Activity
+          </h2>
+          <div className="mb-5">
+            <AddNoteForm organizationId={org.id} parent={{ deal_id: deal.id }} />
+          </div>
+          <ActivityTimeline
+            activities={(activityRows ?? []).map((a) => ({
+              id: a.id,
+              type: a.type,
+              body: a.body,
+              occurred_at: a.occurred_at,
+              actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+            }))}
+          />
+        </div>
+
+        <div className="rounded-xl bg-surface-2 p-5">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+            Details
+          </h2>
+          <dl className="flex flex-col gap-2">
+            <Field
+              label="Value"
+              value={new Intl.NumberFormat(undefined, {
                 style: "currency",
                 currency: deal.currency || "USD",
               }).format(deal.value)}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Contact</dt>
-            <dd className="text-foreground">
-              {contactName && deal.contact_id ? (
-                <Link href={`/contacts/${deal.contact_id}`} className="hover:underline">
-                  {contactName}
-                </Link>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Company</dt>
-            <dd className="text-foreground">
-              {companyName && deal.company_id ? (
-                <Link href={`/companies/${deal.company_id}`} className="hover:underline">
-                  {companyName}
-                </Link>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Owner</dt>
-            <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
-          </div>
-          {deal.description && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Description</dt>
-              <dd className="text-foreground">{deal.description}</dd>
-            </div>
-          )}
-        </dl>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="mb-4">
-          <AddNoteForm organizationId={org.id} parent={{ deal_id: deal.id }} />
+            />
+            <Field
+              label="Contact"
+              value={
+                contactName && deal.contact_id ? (
+                  <Link href={`/contacts/${deal.contact_id}`} className="hover:underline">
+                    {contactName}
+                  </Link>
+                ) : (
+                  "—"
+                )
+              }
+            />
+            <Field
+              label="Company"
+              value={
+                companyName && deal.company_id ? (
+                  <Link href={`/companies/${deal.company_id}`} className="hover:underline">
+                    {companyName}
+                  </Link>
+                ) : (
+                  "—"
+                )
+              }
+            />
+            <Field label="Owner" value={ownerName ?? "Unassigned"} />
+            {deal.description && <Field label="Description" value={deal.description} />}
+          </dl>
         </div>
-        <ActivityTimeline
-          activities={(activityRows ?? []).map((a) => ({
-            id: a.id,
-            type: a.type,
-            body: a.body,
-            occurred_at: a.occurred_at,
-            actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
-          }))}
-        />
       </div>
     </div>
   );

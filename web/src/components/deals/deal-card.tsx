@@ -45,11 +45,11 @@ export function DealCard({ deal, stages, contacts, companies, members, contactNa
   };
 
   return (
-    <div className="rounded-lg border border-border bg-background p-3">
+    <div className="rounded-lg bg-surface p-3 shadow-xs">
       <Link href={`/deals/${deal.id}`} className="font-medium text-foreground hover:underline">
         {deal.name}
       </Link>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-sm tabular-nums text-text-2">
         {new Intl.NumberFormat(undefined, {
           style: "currency",
           currency: deal.currency || "USD",
@@ -58,7 +58,7 @@ export function DealCard({ deal, stages, contacts, companies, members, contactNa
       {contactName && deal.contact_id && (
         <Link
           href={`/contacts/${deal.contact_id}`}
-          className="text-xs text-muted-foreground hover:underline"
+          className="text-xs text-text-3 hover:underline"
         >
           {contactName}
         </Link>

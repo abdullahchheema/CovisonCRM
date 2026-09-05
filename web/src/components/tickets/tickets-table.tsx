@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Download, Trash2 } from "lucide-react";
 
-import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -28,28 +28,15 @@ import {
   CATEGORY_OPTIONS,
   PRIORITY_LABELS,
   PRIORITY_OPTIONS,
+  PRIORITY_VARIANT,
   STATUS_LABELS,
   STATUS_OPTIONS,
+  STATUS_VARIANT,
 } from "./ticket-options";
 
 function toCsvValue(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
-
-const PRIORITY_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
-  low: "neutral",
-  medium: "info",
-  high: "warning",
-  critical: "danger",
-};
-
-const STATUS_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
-  open: "info",
-  inProgress: "brand",
-  onHold: "warning",
-  resolved: "success",
-  closed: "neutral",
-};
 
 interface TicketRow {
   id: string;

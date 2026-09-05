@@ -5,6 +5,16 @@ import { TaskEditDialog } from "@/components/tasks/task-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { PageHeader } from "@/components/ui/page-header";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="text-right text-foreground">{value}</dd>
+    </div>
+  );
+}
 
 export default async function TaskDetailPage({
   params,
@@ -48,68 +58,76 @@ export default async function TaskDetailPage({
       : { data: [] as { id: string; email: string }[] };
   const actorEmailById = new Map((actorProfiles ?? []).map((p) => [p.id, p.email]));
 
+  const details = (
+    <dl className="flex flex-col gap-2">
+      <Field
+        label="Due"
+        value={task.due_at ? new Date(task.due_at).toLocaleDateString() : "—"}
+      />
+      <Field label="Priority" value={<span className="capitalize">{task.priority ?? "—"}</span>} />
+      <Field
+        label="Related contact"
+        value={
+          contactName && task.contact_id ? (
+            <Link href={`/contacts/${task.contact_id}`} className="hover:underline">
+              {contactName}
+            </Link>
+          ) : (
+            "—"
+          )
+        }
+      />
+      {task.description && <Field label="Description" value={task.description} />}
+    </dl>
+  );
+
   return (
-    <div className="mx-auto max-w-2xl">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{task.title}</h1>
-          <p className="text-sm capitalize text-muted-foreground">{task.status}</p>
-        </div>
-        <div className="flex gap-2">
-          <TaskEditDialog task={task} contacts={contacts ?? []} />
-          <SoftDeleteButton table="tasks" id={task.id} label="Task" redirectTo="/tasks" />
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        align="start"
+        title={task.title}
+        description={<span className="capitalize">{task.status}</span>}
+        actions={
+          <>
+            <TaskEditDialog task={task} contacts={contacts ?? []} />
+            <SoftDeleteButton table="tasks" id={task.id} label="Task" redirectTo="/tasks" />
+          </>
+        }
+      />
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Details</h2>
-        <dl className="flex flex-col gap-2 text-sm">
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Due</dt>
-            <dd className="text-foreground">
-              {task.due_at ? new Date(task.due_at).toLocaleDateString() : "—"}
-            </dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Priority</dt>
-            <dd className="capitalize text-foreground">{task.priority ?? "—"}</dd>
-          </div>
-          <div className="flex justify-between gap-4">
-            <dt className="text-muted-foreground">Related contact</dt>
-            <dd className="text-foreground">
-              {contactName && task.contact_id ? (
-                <Link href={`/contacts/${task.contact_id}`} className="hover:underline">
-                  {contactName}
-                </Link>
-              ) : (
-                "—"
-              )}
-            </dd>
-          </div>
-          {task.description && (
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Description</dt>
-              <dd className="text-foreground">{task.description}</dd>
+      {task.deal_id ? (
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          <div className="rounded-xl bg-surface p-6 shadow-sm">
+            <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+              Deal activity
+            </h2>
+            <div className="mb-5">
+              <AddNoteForm organizationId={org.id} parent={{ deal_id: task.deal_id }} />
             </div>
-          )}
-        </dl>
-      </div>
-
-      {task.deal_id && (
-        <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Deal activity</h2>
-          <div className="mb-4">
-            <AddNoteForm organizationId={org.id} parent={{ deal_id: task.deal_id }} />
+            <ActivityTimeline
+              activities={(activityRows ?? []).map((a) => ({
+                id: a.id,
+                type: a.type,
+                body: a.body,
+                occurred_at: a.occurred_at,
+                actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+              }))}
+            />
           </div>
-          <ActivityTimeline
-            activities={(activityRows ?? []).map((a) => ({
-              id: a.id,
-              type: a.type,
-              body: a.body,
-              occurred_at: a.occurred_at,
-              actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
-            }))}
-          />
+
+          <div className="rounded-xl bg-surface-2 p-5">
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Details
+            </h2>
+            {details}
+          </div>
+        </div>
+      ) : (
+        <div className="max-w-md rounded-xl bg-surface-2 p-5">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+            Details
+          </h2>
+          {details}
         </div>
       )}
     </div>

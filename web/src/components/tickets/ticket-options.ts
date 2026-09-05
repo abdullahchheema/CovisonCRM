@@ -34,3 +34,21 @@ export const PRIORITY_LABELS: Record<string, string> = Object.fromEntries(
 export const STATUS_LABELS: Record<string, string> = Object.fromEntries(
   STATUS_OPTIONS.map((o) => [o.value, o.label]),
 );
+
+// Shared between tickets-table.tsx and the ticket detail page — a
+// status/priority's job is state, not identity, so it maps to the
+// semantic Badge colors, not a categorical palette.
+export const PRIORITY_VARIANT: Record<string, "neutral" | "info" | "warning" | "danger"> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
+};
+
+export const STATUS_VARIANT: Record<string, "info" | "brand" | "warning" | "success" | "neutral"> = {
+  open: "info",
+  inProgress: "brand",
+  onHold: "warning",
+  resolved: "success",
+  closed: "neutral",
+};

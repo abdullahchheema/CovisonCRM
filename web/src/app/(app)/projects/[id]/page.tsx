@@ -5,6 +5,7 @@ import { ColumnFormDialog } from "@/components/projects/column-form-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { PageHeader } from "@/components/ui/page-header";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function ProjectDetailPage({
@@ -58,22 +59,24 @@ export default async function ProjectDetailPage({
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">{project.name}</h1>
-        <div className="flex gap-2">
-          <ColumnFormDialog
-            organizationId={org.id}
-            projectId={project.id}
-            nextPosition={(columns ?? []).length}
-          />
-          <SoftDeleteButton
-            table="projects"
-            id={project.id}
-            label="Project"
-            redirectTo="/projects"
-          />
-        </div>
-      </div>
+      <PageHeader
+        title={project.name}
+        actions={
+          <>
+            <ColumnFormDialog
+              organizationId={org.id}
+              projectId={project.id}
+              nextPosition={(columns ?? []).length}
+            />
+            <SoftDeleteButton
+              table="projects"
+              id={project.id}
+              label="Project"
+              redirectTo="/projects"
+            />
+          </>
+        }
+      />
 
       <ProjectBoard
         projectId={project.id}
@@ -83,9 +86,11 @@ export default async function ProjectDetailPage({
         members={members}
       />
 
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Discussion</h2>
-        <div className="mb-4">
+      <div className="mt-6 rounded-xl bg-surface p-6 shadow-sm">
+        <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+          Discussion
+        </h2>
+        <div className="mb-5">
           <AddNoteForm organizationId={org.id} parent={{ project_id: project.id }} />
         </div>
         <ActivityTimeline

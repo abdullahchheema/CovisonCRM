@@ -67,18 +67,18 @@ function TodoCard({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`group rounded-lg border border-border bg-background p-3 ${isDragging ? "opacity-50" : ""}`}
+      className={`group rounded-lg bg-surface p-3 shadow-xs ${isDragging ? "opacity-50" : ""}`}
     >
       <div className="flex items-start justify-between gap-2">
         <div {...listeners} {...attributes} className="min-w-0 flex-1 cursor-grab">
           <p className="text-sm font-medium text-foreground">{todo.title}</p>
           {todo.description && (
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+            <p className="mt-1 line-clamp-2 text-xs text-text-2">
               {todo.description}
             </p>
           )}
           {memberName && (
-            <p className="mt-2 text-xs text-muted-foreground">{memberName}</p>
+            <p className="mt-2 text-xs text-text-3">{memberName}</p>
           )}
         </div>
       </div>
@@ -114,7 +114,7 @@ function Column({
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex w-72 shrink-0 flex-col rounded-xl border border-border bg-muted/30 p-2 ${isDragging ? "opacity-50" : ""}`}
+      className={`flex w-72 shrink-0 flex-col rounded-xl bg-surface-2 p-2 ${isDragging ? "opacity-50" : ""}`}
     >
       <div
         {...listeners}
@@ -122,7 +122,9 @@ function Column({
         className="mb-2 flex cursor-grab items-center justify-between px-1"
       >
         <h2 className="text-sm font-medium text-foreground">{column.name}</h2>
-        <span className="text-xs text-muted-foreground">{todos.length}</span>
+        <span className="rounded-full bg-surface-3 px-1.5 py-0.5 text-xs text-text-2">
+          {todos.length}
+        </span>
       </div>
       <SortableContext
         items={todos.map((t) => t.id)}
@@ -327,11 +329,11 @@ export function ProjectBoard({
       </SortableContext>
       <DragOverlay>
         {activeTodo ? (
-          <div className="w-72 rounded-lg border border-border bg-background p-3 shadow-lg">
+          <div className="w-72 rounded-lg bg-surface p-3 shadow-lg">
             <p className="text-sm font-medium text-foreground">{activeTodo.title}</p>
           </div>
         ) : activeColumn ? (
-          <div className="w-72 rounded-xl border border-border bg-muted/60 p-2 shadow-lg">
+          <div className="w-72 rounded-xl bg-surface-3 p-2 shadow-lg">
             <p className="text-sm font-medium text-foreground">{activeColumn.name}</p>
           </div>
         ) : null}

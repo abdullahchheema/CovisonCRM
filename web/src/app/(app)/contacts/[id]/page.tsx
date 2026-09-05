@@ -5,7 +5,19 @@ import { ContactTagManager } from "@/components/contacts/contact-tag-manager";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { Separator } from "@/components/ui/separator";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+
+function Field({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 text-sm">
+      <dt className="text-text-2">{label}</dt>
+      <dd className="text-right text-foreground">{value}</dd>
+    </div>
+  );
+}
 
 export default async function ContactDetailPage({
   params,
@@ -60,179 +72,149 @@ export default async function ContactDetailPage({
   const ownerName = contact.owner_id
     ? members.find((m) => m.id === contact.owner_id)?.name
     : null;
+  const contactTags = (assignedTagRows ?? [])
+    .map((row) => (allTags ?? []).find((t) => t.id === row.tag_id))
+    .filter((t): t is NonNullable<typeof t> => !!t);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <div className="mb-6 flex items-start justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-foreground">{contact.name}</h1>
-          {companyName && (
-            <p className="text-sm text-muted-foreground">{companyName}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <ContactEditDialog contact={contact} companies={companies ?? []} members={members} />
-          <SoftDeleteButton
-            table="contacts"
-            id={contact.id}
-            label="Contact"
-            redirectTo="/contacts"
+    <div>
+      <PageHeader
+        align="start"
+        title={contact.name}
+        description={companyName}
+        actions={
+          <>
+            <ContactEditDialog contact={contact} companies={companies ?? []} members={members} />
+            <SoftDeleteButton
+              table="contacts"
+              id={contact.id}
+              label="Contact"
+              redirectTo="/contacts"
+            />
+          </>
+        }
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Activity
+          </h2>
+          <div className="mb-5">
+            <AddNoteForm organizationId={org.id} parent={{ contact_id: contact.id }} />
+          </div>
+          <ActivityTimeline
+            activities={(activityRows ?? []).map((a) => ({
+              id: a.id,
+              type: a.type,
+              body: a.body,
+              occurred_at: a.occurred_at,
+              actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+            }))}
           />
         </div>
-      </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Details</h2>
-          <dl className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="text-foreground">{contact.email ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Phone</dt>
-              <dd className="text-foreground">{contact.phone ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Job title</dt>
-              <dd className="text-foreground">{contact.job_title ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Status</dt>
-              <dd className="text-foreground capitalize">{contact.status}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Owner</dt>
-              <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Priority</dt>
-              <dd className="text-foreground capitalize">{contact.priority ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">City / Country</dt>
-              <dd className="text-foreground">
-                {[contact.city, contact.country].filter(Boolean).join(", ") || "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Niche</dt>
-              <dd className="text-foreground">{contact.niche ?? "—"}</dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Website</dt>
-              <dd className="text-foreground">
-                {contact.website ? (
-                  <a
-                    href={contact.website}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    {contact.website}
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">LinkedIn</dt>
-              <dd className="text-foreground">
-                {contact.linkedin_url ? (
-                  <a
-                    href={contact.linkedin_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="hover:underline"
-                  >
-                    Profile
-                  </a>
-                ) : (
-                  "—"
-                )}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Lead details</h2>
-          <dl className="flex flex-col gap-2 text-sm">
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Expected revenue</dt>
-              <dd className="text-foreground">
-                {contact.expected_revenue != null
-                  ? new Intl.NumberFormat(undefined, {
-                      style: "currency",
-                      currency: "USD",
-                    }).format(contact.expected_revenue)
-                  : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Expected close</dt>
-              <dd className="text-foreground">
-                {contact.expected_close
-                  ? new Date(contact.expected_close).toLocaleDateString()
-                  : "—"}
-              </dd>
-            </div>
-            <div className="flex justify-between gap-4">
-              <dt className="text-muted-foreground">Probability</dt>
-              <dd className="text-foreground">
-                {contact.probability
-                  ? `${Math.round(Number(contact.probability) * 100)}%`
-                  : "—"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-medium text-foreground">Tags</h2>
-            <ContactTagManager
-              contactId={contact.id}
-              organizationId={org.id}
-              allTags={allTags ?? []}
-              assignedTagIds={(assignedTagRows ?? []).map((t) => t.tag_id)}
-            />
+        <div className="flex flex-col gap-5 rounded-xl bg-surface-2 p-5">
+          <div>
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Details
+            </h2>
+            <dl className="flex flex-col gap-2">
+              <Field label="Email" value={contact.email ?? "—"} />
+              <Field label="Phone" value={contact.phone ?? "—"} />
+              <Field label="Job title" value={contact.job_title ?? "—"} />
+              <Field label="Status" value={<span className="capitalize">{contact.status}</span>} />
+              <Field label="Owner" value={ownerName ?? "Unassigned"} />
+              <Field label="Priority" value={<span className="capitalize">{contact.priority ?? "—"}</span>} />
+              <Field
+                label="City / Country"
+                value={[contact.city, contact.country].filter(Boolean).join(", ") || "—"}
+              />
+              <Field label="Niche" value={contact.niche ?? "—"} />
+              <Field
+                label="Website"
+                value={
+                  contact.website ? (
+                    <a href={contact.website} target="_blank" rel="noreferrer" className="hover:underline">
+                      {contact.website}
+                    </a>
+                  ) : (
+                    "—"
+                  )
+                }
+              />
+              <Field
+                label="LinkedIn"
+                value={
+                  contact.linkedin_url ? (
+                    <a href={contact.linkedin_url} target="_blank" rel="noreferrer" className="hover:underline">
+                      Profile
+                    </a>
+                  ) : (
+                    "—"
+                  )
+                }
+              />
+            </dl>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            {(assignedTagRows ?? []).length === 0 && (
-              <p className="text-sm text-muted-foreground">No tags yet.</p>
-            )}
-            {(assignedTagRows ?? []).map((row) => {
-              const tag = (allTags ?? []).find((t) => t.id === row.tag_id);
-              if (!tag) return null;
-              return (
-                <span
-                  key={tag.id}
-                  className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground"
-                >
+
+          <Separator />
+
+          <div>
+            <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Lead details
+            </h2>
+            <dl className="flex flex-col gap-2">
+              <Field
+                label="Expected revenue"
+                value={
+                  contact.expected_revenue != null
+                    ? new Intl.NumberFormat(undefined, {
+                        style: "currency",
+                        currency: "USD",
+                      }).format(contact.expected_revenue)
+                    : "—"
+                }
+              />
+              <Field
+                label="Expected close"
+                value={
+                  contact.expected_close
+                    ? new Date(contact.expected_close).toLocaleDateString()
+                    : "—"
+                }
+              />
+              <Field
+                label="Probability"
+                value={
+                  contact.probability ? `${Math.round(Number(contact.probability) * 100)}%` : "—"
+                }
+              />
+            </dl>
+          </div>
+
+          <Separator />
+
+          <div>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-medium uppercase tracking-wide text-text-2">Tags</h2>
+              <ContactTagManager
+                contactId={contact.id}
+                organizationId={org.id}
+                allTags={allTags ?? []}
+                assignedTagIds={(assignedTagRows ?? []).map((t) => t.tag_id)}
+              />
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {contactTags.length === 0 && <p className="text-sm text-text-2">No tags yet.</p>}
+              {contactTags.map((tag) => (
+                <Badge key={tag.id} variant="neutral">
                   {tag.name}
-                </span>
-              );
-            })}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
-        <div className="mb-4">
-          <AddNoteForm organizationId={org.id} parent={{ contact_id: contact.id }} />
-        </div>
-        <ActivityTimeline
-          activities={(activityRows ?? []).map((a) => ({
-            id: a.id,
-            type: a.type,
-            body: a.body,
-            occurred_at: a.occurred_at,
-            actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
-          }))}
-        />
       </div>
     </div>
   );

@@ -13,7 +13,10 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 
+import { Download } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { DealCard } from "@/components/deals/deal-card";
@@ -91,8 +94,8 @@ function DroppableColumn({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-col gap-2 rounded-xl border border-border p-2 min-h-24 transition-colors ${
-        isOver ? "bg-primary/10" : "bg-muted/40"
+      className={`flex min-h-24 flex-col gap-2 rounded-xl p-2 transition-colors ${
+        isOver ? "bg-brand-soft" : "bg-surface-2"
       }`}
     >
       {children}
@@ -233,13 +236,8 @@ export function PipelineBoard({
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(e) => setOnlyMine(e.target.checked)}
-            className="size-4"
-          />
+        <label className="flex items-center gap-2 text-sm text-text-2">
+          <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine
         </label>
         <SavedViewsMenu
@@ -251,15 +249,15 @@ export function PipelineBoard({
           onApply={applyFilters}
         />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
-          Export CSV
+          <Download /> Export CSV
         </Button>
       </div>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (
-          <div key={stage.id} className="w-64 shrink-0">
+          <div key={stage.id} className="w-72 shrink-0">
             <div className="mb-2 flex items-center justify-between px-1">
               <h2 className="text-sm font-medium text-foreground">{stage.name}</h2>
-              <span className="text-xs text-muted-foreground">
+              <span className="rounded-full bg-surface-3 px-1.5 py-0.5 text-xs text-text-2">
                 {(dealsByStage.get(stage.id) ?? []).length}
               </span>
             </div>
