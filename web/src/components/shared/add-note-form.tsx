@@ -9,7 +9,12 @@ import { createClient } from "@/lib/supabase/client";
 
 interface AddNoteFormProps {
   organizationId: string;
-  parent: { contact_id: string } | { company_id: string } | { deal_id: string };
+  parent:
+    | { contact_id: string }
+    | { company_id: string }
+    | { deal_id: string }
+    | { ticket_id: string }
+    | { project_id: string };
 }
 
 export function AddNoteForm({ organizationId, parent }: AddNoteFormProps) {

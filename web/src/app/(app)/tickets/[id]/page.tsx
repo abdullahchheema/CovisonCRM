@@ -3,6 +3,8 @@ import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { TicketEditDialog } from "@/components/tickets/ticket-edit-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
+import { AddNoteForm } from "@/components/shared/add-note-form";
+import { ActivityTimeline } from "@/components/shared/activity-timeline";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 import {
   CATEGORY_LABELS,
@@ -16,7 +18,7 @@ export default async function TicketDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { supabase } = await requireOrgContext();
+  const { supabase, org } = await requireOrgContext();
 
   const { data: ticket } = await supabase
     .from("tickets")
@@ -29,9 +31,15 @@ export default async function TicketDetailPage({
     notFound();
   }
 
-  const [{ data: contacts }, members] = await Promise.all([
+  const [{ data: contacts }, members, { data: activityRows }] = await Promise.all([
     supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
     getOrgMemberOptions(supabase),
+    supabase
+      .from("activities")
+      .select("id, type, body, occurred_at, actor_id")
+      .eq("ticket_id", id)
+      .is("deleted_at", null)
+      .order("occurred_at", { ascending: false }),
   ]);
 
   const contactName = ticket.contact_id
@@ -40,6 +48,15 @@ export default async function TicketDetailPage({
   const assigneeName = ticket.assigned_to
     ? members.find((m) => m.id === ticket.assigned_to)?.name
     : null;
+
+  const actorIds = [
+    ...new Set((activityRows ?? []).map((a) => a.actor_id).filter((v): v is string => !!v)),
+  ];
+  const { data: actorProfiles } =
+    actorIds.length > 0
+      ? await supabase.from("profiles").select("id, email").in("id", actorIds)
+      : { data: [] as { id: string; email: string }[] };
+  const actorEmailById = new Map((actorProfiles ?? []).map((p) => [p.id, p.email]));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -96,6 +113,22 @@ export default async function TicketDetailPage({
             <p className="whitespace-pre-wrap text-sm text-foreground">{ticket.description}</p>
           </div>
         )}
+      </div>
+
+      <div className="mt-6 rounded-xl border border-border bg-surface p-4">
+        <h2 className="mb-3 text-sm font-medium text-foreground">Activity</h2>
+        <div className="mb-4">
+          <AddNoteForm organizationId={org.id} parent={{ ticket_id: ticket.id }} />
+        </div>
+        <ActivityTimeline
+          activities={(activityRows ?? []).map((a) => ({
+            id: a.id,
+            type: a.type,
+            body: a.body,
+            occurred_at: a.occurred_at,
+            actorEmail: a.actor_id ? (actorEmailById.get(a.actor_id) ?? null) : null,
+          }))}
+        />
       </div>
     </div>
   );

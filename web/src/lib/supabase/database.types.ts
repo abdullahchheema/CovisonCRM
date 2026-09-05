@@ -339,6 +339,7 @@ export type Database = {
           company_id: string | null;
           deal_id: string | null;
           project_id: string | null;
+          ticket_id: string | null;
           actor_id: string | null;
           occurred_at: string;
           created_at: string;
@@ -354,6 +355,7 @@ export type Database = {
           company_id?: string | null;
           deal_id?: string | null;
           project_id?: string | null;
+          ticket_id?: string | null;
           actor_id?: string | null;
           occurred_at?: string;
           created_at?: string;
@@ -369,6 +371,7 @@ export type Database = {
           company_id?: string | null;
           deal_id?: string | null;
           project_id?: string | null;
+          ticket_id?: string | null;
           actor_id?: string | null;
           occurred_at?: string;
           created_at?: string;
