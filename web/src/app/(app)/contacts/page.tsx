@@ -1,5 +1,6 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { ContactFormDialog } from "@/components/contacts/contact-form-dialog";
+import { ContactsImportDialog } from "@/components/contacts/contacts-import-dialog";
 import { ContactsTable } from "@/components/contacts/contacts-table";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
@@ -57,7 +58,10 @@ export default async function ContactsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-semibold text-foreground">Contacts</h1>
-        <ContactFormDialog organizationId={org.id} companies={companies ?? []} members={members} />
+        <div className="flex gap-2">
+          <ContactsImportDialog organizationId={org.id} existingCompanies={companies ?? []} />
+          <ContactFormDialog organizationId={org.id} companies={companies ?? []} members={members} />
+        </div>
       </div>
 
       {error && <p className="text-sm text-danger">{error.message}</p>}
