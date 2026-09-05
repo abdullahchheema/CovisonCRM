@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
@@ -57,6 +58,7 @@ interface ContactsTableProps {
   organizationId: string;
   tags: Tag[];
   tagsByContactId: Record<string, Tag[]>;
+  savedViews: SavedView[];
 }
 
 export function ContactsTable({
@@ -67,6 +69,7 @@ export function ContactsTable({
   organizationId,
   tags,
   tagsByContactId,
+  savedViews,
 }: ContactsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -193,6 +196,23 @@ export function ContactsTable({
     router.refresh();
   };
 
+  const currentFilters = {
+    search,
+    status,
+    tagFilter,
+    onlyMine,
+    sort,
+  };
+
+  const applyFilters = (filters: Record<string, unknown>) => {
+    if (typeof filters.search === "string") setSearch(filters.search);
+    if (typeof filters.status === "string") setStatus(filters.status);
+    if (typeof filters.tagFilter === "string") setTagFilter(filters.tagFilter);
+    if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
+    const loadedSort = filters.sort as { key: SortKey; dir: "asc" | "desc" } | null | undefined;
+    setSort(loadedSort ?? null);
+  };
+
   const exportCsv = () => {
     const header = ["Name", "Email", "Phone", "Job title", "Status", "Tags", "Company", "Owner"];
     const rows = sorted.map((contact) => [
@@ -259,6 +279,14 @@ export function ContactsTable({
           />
           Only mine
         </label>
+        <SavedViewsMenu
+          organizationId={organizationId}
+          currentUserId={currentUserId}
+          entityType="contacts"
+          initialViews={savedViews}
+          currentFilters={currentFilters}
+          onApply={applyFilters}
+        />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
           Export CSV
         </Button>

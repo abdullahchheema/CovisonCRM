@@ -6,7 +6,7 @@ import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 export default async function ContactsPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: contacts, error }, { data: companies }, members, { data: tags }] =
+  const [{ data: contacts, error }, { data: companies }, members, { data: tags }, { data: savedViews }] =
     await Promise.all([
       supabase
         .from("contacts")
@@ -23,6 +23,11 @@ export default async function ContactsPage() {
         .from("tags")
         .select("id, name, color")
         .is("deleted_at", null)
+        .order("name"),
+      supabase
+        .from("saved_views")
+        .select("id, name, filters, is_shared, user_id")
+        .eq("entity_type", "contacts")
         .order("name"),
     ]);
 
@@ -66,6 +71,7 @@ export default async function ContactsPage() {
           organizationId={org.id}
           tags={tags ?? []}
           tagsByContactId={tagsByContactId}
+          savedViews={savedViews ?? []}
         />
       )}
     </div>

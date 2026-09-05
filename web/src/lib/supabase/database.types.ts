@@ -919,6 +919,42 @@ export type Database = {
         };
         Relationships: [];
       };
+      saved_views: {
+        Row: {
+          id: string;
+          organization_id: string;
+          user_id: string;
+          entity_type: string;
+          name: string;
+          filters: Record<string, unknown>;
+          is_shared: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          user_id: string;
+          entity_type: string;
+          name: string;
+          filters?: Record<string, unknown>;
+          is_shared?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          user_id?: string;
+          entity_type?: string;
+          name?: string;
+          filters?: Record<string, unknown>;
+          is_shared?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
