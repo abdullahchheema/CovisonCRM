@@ -7,10 +7,11 @@ deleting them, so history of what shipped stays visible.
 
 ## Action needed from you (not engineering work)
 
-- [ ] Apply migrations `20260905000003` through `20260905000006` to the live
+- [ ] Apply migrations `20260905000003` through `20260905000007` to the live
       Supabase project (SQL Editor, same as the first 15) — tickets,
-      projects/kanban, and email groups/templates schema + RLS. Re-run
-      `supabase/tests/rls_meta.sql` after; both queries must return 0 rows.
+      projects/kanban, email groups/templates, and notifications schema +
+      RLS. Re-run `supabase/tests/rls_meta.sql` after; both queries must
+      return 0 rows.
 - [ ] Decide on merging `hotfix/w0-security-hardening` into `master` (legacy
       Go app security patches — JWT leak, permission checks, token expiry).
       Merging triggers a live deploy of the old app, so left for your call.
@@ -18,10 +19,6 @@ deleting them, so history of what shipped stays visible.
 
 ## In progress / next up
 
-- [ ] Notifications (in-app, assignment-triggered): notify a user when a
-      contact/company/deal/task/ticket is assigned to them. Schema +
-      polling-based unread bell first; Supabase Realtime is the natural
-      upgrade once this is proven.
 - [ ] Saved views: persist a named filter/sort combination per user, per
       list page. Contacts first (flagship), then companies/tickets/tasks.
 - [ ] CSV import for contacts (export already exists). Needs: column
@@ -45,6 +42,8 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] In-app notifications (assignment-triggered, SECURITY DEFINER
+      triggers, recipient-scoped RLS, polling bell in the header).
 - [x] Contact field parity: priority, expected revenue/close, probability,
       LinkedIn, website, city/country, niche — schema already had these,
       no form exposed them until now.
