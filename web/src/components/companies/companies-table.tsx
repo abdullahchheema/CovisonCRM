@@ -15,6 +15,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
@@ -36,12 +37,16 @@ interface CompaniesTableProps {
   companies: CompanyRow[];
   ownerNameById: Record<string, string>;
   currentUserId: string;
+  organizationId: string;
+  savedViews: SavedView[];
 }
 
 export function CompaniesTable({
   companies,
   ownerNameById,
   currentUserId,
+  organizationId,
+  savedViews,
 }: CompaniesTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -128,6 +133,15 @@ export function CompaniesTable({
     router.refresh();
   };
 
+  const currentFilters = { search, onlyMine, sort };
+
+  const applyFilters = (filters: Record<string, unknown>) => {
+    if (typeof filters.search === "string") setSearch(filters.search);
+    if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
+    const loadedSort = filters.sort as { key: SortKey; dir: "asc" | "desc" } | null | undefined;
+    setSort(loadedSort ?? null);
+  };
+
   const exportCsv = () => {
     const header = ["Name", "Domain", "Phone", "Industry", "Owner"];
     const rows = sorted.map((company) => [
@@ -167,6 +181,14 @@ export function CompaniesTable({
           />
           Only mine
         </label>
+        <SavedViewsMenu
+          organizationId={organizationId}
+          currentUserId={currentUserId}
+          entityType="companies"
+          initialViews={savedViews}
+          currentFilters={currentFilters}
+          onApply={applyFilters}
+        />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
           Export CSV
         </Button>

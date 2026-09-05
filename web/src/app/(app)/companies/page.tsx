@@ -6,13 +6,18 @@ import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 export default async function CompaniesPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: companies, error }, members] = await Promise.all([
+  const [{ data: companies, error }, members, { data: savedViews }] = await Promise.all([
     supabase
       .from("companies")
       .select("id, name, domain, website, phone, industry, owner_id, created_at")
       .is("deleted_at", null)
       .order("created_at", { ascending: false }),
     getOrgMemberOptions(supabase),
+    supabase
+      .from("saved_views")
+      .select("id, name, filters, is_shared, user_id")
+      .eq("entity_type", "companies")
+      .order("name"),
   ]);
 
   const ownerNameById = Object.fromEntries(members.map((m) => [m.id, m.name]));
@@ -31,6 +36,8 @@ export default async function CompaniesPage() {
           companies={companies ?? []}
           ownerNameById={ownerNameById}
           currentUserId={profile.id}
+          organizationId={org.id}
+          savedViews={savedViews ?? []}
         />
       )}
     </div>

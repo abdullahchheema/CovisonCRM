@@ -6,15 +6,21 @@ import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 export default async function TicketsPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: tickets, error }, { data: contacts }, members] = await Promise.all([
-    supabase
-      .from("tickets")
-      .select("id, title, category, priority, status, contact_id, assigned_to, created_at")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false }),
-    supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
-    getOrgMemberOptions(supabase),
-  ]);
+  const [{ data: tickets, error }, { data: contacts }, members, { data: savedViews }] =
+    await Promise.all([
+      supabase
+        .from("tickets")
+        .select("id, title, category, priority, status, contact_id, assigned_to, created_at")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
+      supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
+      getOrgMemberOptions(supabase),
+      supabase
+        .from("saved_views")
+        .select("id, name, filters, is_shared, user_id")
+        .eq("entity_type", "tickets")
+        .order("name"),
+    ]);
 
   const contactNameById = Object.fromEntries(
     (contacts ?? []).map((contact) => [contact.id, contact.name]),
@@ -40,6 +46,8 @@ export default async function TicketsPage() {
           contactNameById={contactNameById}
           memberNameById={memberNameById}
           currentUserId={profile.id}
+          organizationId={org.id}
+          savedViews={savedViews ?? []}
         />
       )}
     </div>

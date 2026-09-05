@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { CATEGORY_LABELS, CATEGORY_OPTIONS, PRIORITY_LABELS, PRIORITY_OPTIONS, STATUS_LABELS, STATUS_OPTIONS } from "./ticket-options";
 
 interface TicketRow {
@@ -23,6 +24,8 @@ interface TicketsTableProps {
   contactNameById: Record<string, string>;
   memberNameById: Record<string, string>;
   currentUserId: string;
+  organizationId: string;
+  savedViews: SavedView[];
 }
 
 export function TicketsTable({
@@ -30,6 +33,8 @@ export function TicketsTable({
   contactNameById,
   memberNameById,
   currentUserId,
+  organizationId,
+  savedViews,
 }: TicketsTableProps) {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -48,6 +53,16 @@ export function TicketsTable({
       return ticket.title.toLowerCase().includes(term);
     });
   }, [tickets, search, status, priority, category, onlyMine, currentUserId]);
+
+  const currentFilters = { search, status, priority, category, onlyMine };
+
+  const applyFilters = (filters: Record<string, unknown>) => {
+    if (typeof filters.search === "string") setSearch(filters.search);
+    if (typeof filters.status === "string") setStatus(filters.status);
+    if (typeof filters.priority === "string") setPriority(filters.priority);
+    if (typeof filters.category === "string") setCategory(filters.category);
+    if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
+  };
 
   return (
     <div>
@@ -99,6 +114,14 @@ export function TicketsTable({
           />
           Only mine
         </label>
+        <SavedViewsMenu
+          organizationId={organizationId}
+          currentUserId={currentUserId}
+          entityType="tickets"
+          initialViews={savedViews}
+          currentFilters={currentFilters}
+          onApply={applyFilters}
+        />
       </div>
 
       {filtered.length === 0 ? (
