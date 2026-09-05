@@ -2,10 +2,15 @@
 
 import { useMemo, useState } from "react";
 
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { TaskRow } from "@/components/tasks/task-row";
+
+function toCsvValue(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
 
 interface TaskRowData {
   id: string;
@@ -21,6 +26,7 @@ interface TasksListProps {
   tasks: TaskRowData[];
   contacts: { id: string; name: string }[];
   contactNameById: Record<string, string>;
+  memberNameById: Record<string, string>;
   currentUserId: string;
   organizationId: string;
   savedViews: SavedView[];
@@ -30,6 +36,7 @@ export function TasksList({
   tasks,
   contacts,
   contactNameById,
+  memberNameById,
   currentUserId,
   organizationId,
   savedViews,
@@ -58,6 +65,28 @@ export function TasksList({
 
   const open = filtered.filter((t) => t.status !== "completed");
   const completed = filtered.filter((t) => t.status === "completed");
+
+  const exportCsv = () => {
+    const header = ["Title", "Status", "Priority", "Due date", "Contact", "Assigned to"];
+    const rows = filtered.map((task) => [
+      task.title,
+      task.status,
+      task.priority ?? "",
+      task.due_at ? new Date(task.due_at).toLocaleDateString() : "",
+      task.contact_id ? (contactNameById[task.contact_id] ?? "") : "",
+      task.assigned_to ? (memberNameById[task.assigned_to] ?? "") : "",
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map(toCsvValue).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tasks-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div>
@@ -91,6 +120,9 @@ export function TasksList({
           currentFilters={currentFilters}
           onApply={applyFilters}
         />
+        <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
+          Export CSV
+        </Button>
       </div>
 
       {filtered.length === 0 ? (

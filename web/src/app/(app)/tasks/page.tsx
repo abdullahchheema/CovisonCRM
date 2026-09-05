@@ -1,28 +1,32 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { TaskFormDialog } from "@/components/tasks/task-form-dialog";
 import { TasksList } from "@/components/tasks/tasks-list";
+import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 
 export default async function TasksPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: tasks, error }, { data: contacts }, { data: savedViews }] = await Promise.all([
-    supabase
-      .from("tasks")
-      .select("id, title, status, priority, due_at, contact_id, assigned_to")
-      .is("deleted_at", null)
-      .order("due_at", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: false }),
-    supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
-    supabase
-      .from("saved_views")
-      .select("id, name, filters, is_shared, user_id")
-      .eq("entity_type", "tasks")
-      .order("name"),
-  ]);
+  const [{ data: tasks, error }, { data: contacts }, { data: savedViews }, members] =
+    await Promise.all([
+      supabase
+        .from("tasks")
+        .select("id, title, status, priority, due_at, contact_id, assigned_to")
+        .is("deleted_at", null)
+        .order("due_at", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: false }),
+      supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
+      supabase
+        .from("saved_views")
+        .select("id, name, filters, is_shared, user_id")
+        .eq("entity_type", "tasks")
+        .order("name"),
+      getOrgMemberOptions(supabase),
+    ]);
 
   const contactNameById = Object.fromEntries(
     (contacts ?? []).map((c) => [c.id, c.name]),
   );
+  const memberNameById = Object.fromEntries(members.map((m) => [m.id, m.name]));
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -42,6 +46,7 @@ export default async function TasksPage() {
           tasks={tasks ?? []}
           contacts={contacts ?? []}
           contactNameById={contactNameById}
+          memberNameById={memberNameById}
           currentUserId={profile.id}
           organizationId={org.id}
           savedViews={savedViews ?? []}
