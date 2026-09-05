@@ -20,9 +20,10 @@ deleting them, so history of what shipped stays visible.
 
 ## In progress / next up
 
-- [ ] Saved views on companies/tickets/tasks — schema and component
-      (SavedViewsMenu) are already generic; contacts is the only page
-      wired up so far.
+- [ ] Saved views on tasks — the list page has no client-side filter
+      state yet (only a server-driven `?mine=1` param), so there's
+      nothing for a saved view to capture until it gets one. Contacts,
+      companies, and tickets are done.
 
 ## Deferred — needs an external account or a bigger schema decision
 
@@ -36,6 +37,7 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] Saved views extended to companies and tickets (contacts was first).
 - [x] Activity/notes timeline on ticket and project detail pages —
       activities.ticket_id added, CHECK constraint extended, project_id FK
       finished (was reserved with no FK since the projects table didn't
