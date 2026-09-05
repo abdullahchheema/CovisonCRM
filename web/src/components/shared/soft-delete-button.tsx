@@ -17,7 +17,16 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
-type SoftDeletableTable = "contacts" | "companies" | "deals" | "tasks" | "tags";
+type SoftDeletableTable =
+  | "contacts"
+  | "companies"
+  | "deals"
+  | "tasks"
+  | "tags"
+  | "tickets"
+  | "projects"
+  | "email_groups"
+  | "email_templates";
 
 interface SoftDeleteButtonProps {
   table: SoftDeletableTable;

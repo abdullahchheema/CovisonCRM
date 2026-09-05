@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, KanbanSquare, ListTodo, User } from "lucide-react";
+import { Building2, KanbanSquare, LifeBuoy, ListTodo, User } from "lucide-react";
 
 import {
   CommandDialog,
@@ -19,9 +19,16 @@ interface SearchData {
   companies: { id: string; name: string }[];
   deals: { id: string; name: string }[];
   tasks: { id: string; title: string }[];
+  tickets: { id: string; title: string }[];
 }
 
-const EMPTY_DATA: SearchData = { contacts: [], companies: [], deals: [], tasks: [] };
+const EMPTY_DATA: SearchData = {
+  contacts: [],
+  companies: [],
+  deals: [],
+  tasks: [],
+  tickets: [],
+};
 
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
@@ -49,12 +56,14 @@ export function CommandPalette() {
       supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
       supabase.from("deals").select("id, name").is("deleted_at", null).order("name"),
       supabase.from("tasks").select("id, title").is("deleted_at", null).order("title"),
-    ]).then(([contacts, companies, deals, tasks]) => {
+      supabase.from("tickets").select("id, title").is("deleted_at", null).order("title"),
+    ]).then(([contacts, companies, deals, tasks, tickets]) => {
       setData({
         contacts: contacts.data ?? [],
         companies: companies.data ?? [],
         deals: deals.data ?? [],
         tasks: tasks.data ?? [],
+        tickets: tickets.data ?? [],
       });
       setLoaded(true);
     });
@@ -137,6 +146,21 @@ export function CommandPalette() {
               >
                 <ListTodo className="size-4 text-muted-foreground" />
                 {task.title}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        )}
+
+        {data.tickets.length > 0 && (
+          <CommandGroup heading="Tickets">
+            {data.tickets.map((ticket) => (
+              <CommandItem
+                key={ticket.id}
+                value={`ticket ${ticket.title}`}
+                onSelect={() => go(`/tickets/${ticket.id}`)}
+              >
+                <LifeBuoy className="size-4 text-muted-foreground" />
+                {ticket.title}
               </CommandItem>
             ))}
           </CommandGroup>
