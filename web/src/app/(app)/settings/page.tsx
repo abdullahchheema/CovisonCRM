@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { ProfileSettingsForm } from "@/components/settings/profile-settings-form";
 import { WorkspaceSettingsForm } from "@/components/settings/workspace-settings-form";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function SettingsPage() {
   const { supabase, profile, org } = await requireOrgContext();
@@ -24,22 +25,24 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col gap-6">
-      <h1 className="text-xl font-semibold text-foreground">Settings</h1>
-      <ProfileSettingsForm
-        userId={profile.id}
-        email={profile.email}
-        fullName={profile.full_name}
-      />
-      <WorkspaceSettingsForm
-        organizationId={org.id}
-        name={org.name}
-        slug={org.slug}
-        logoSignedUrl={logoSignedUrl}
-      />
-      <Link href="/settings/activity" className="text-sm text-primary hover:underline">
-        View activity log →
-      </Link>
+    <div className="mx-auto max-w-lg">
+      <PageHeader title="Settings" />
+      <div className="flex flex-col gap-6">
+        <ProfileSettingsForm
+          userId={profile.id}
+          email={profile.email}
+          fullName={profile.full_name}
+        />
+        <WorkspaceSettingsForm
+          organizationId={org.id}
+          name={org.name}
+          slug={org.slug}
+          logoSignedUrl={logoSignedUrl}
+        />
+        <Link href="/settings/activity" className="text-sm text-primary hover:underline">
+          View activity log →
+        </Link>
+      </div>
     </div>
   );
 }

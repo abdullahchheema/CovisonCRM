@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -96,9 +97,9 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
     return (
       <li className="flex items-center justify-between text-sm">
         <span className="text-foreground">{displayName} (you)</span>
-        <span className="rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-foreground">
+        <Badge variant="brand" className="capitalize">
           {role}
-        </span>
+        </Badge>
       </li>
     );
   }

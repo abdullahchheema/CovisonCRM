@@ -50,12 +50,12 @@ export function AcceptInvitationClient({ token }: { token: string }) {
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl">
+            <CardTitle className="font-display text-h3">
               {status === "error" ? "Couldn't accept invitation" : "Joining workspace"}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground">{message}</p>
+            <p className="text-sm text-text-2">{message}</p>
           </CardContent>
         </Card>
       </div>

@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -160,19 +161,16 @@ export function EmailTemplateFormDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="body">Body</Label>
-            <textarea
-              id="body"
-              rows={5}
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-              {...register("body")}
-            />
-            <p className="text-xs text-muted-foreground">
+            <Textarea id="body" rows={5} {...register("body")} />
+            <p className="text-xs text-text-3">
               Dynamic variables: {"{{name}}"}, {"{{email}}"}
             </p>
           </div>
 
-          <div className="rounded-lg border border-border bg-muted/30 p-4">
-            <p className="mb-3 text-sm font-medium text-foreground">Schedule</p>
+          <div className="rounded-lg bg-surface-2 p-4">
+            <p className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+              Schedule
+            </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="frequency">Frequency</Label>
@@ -222,7 +220,7 @@ export function EmailTemplateFormDialog({
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-text-3">
             Sending isn&apos;t wired up yet — this workspace has no email provider
             configured. Templates and audiences can be built now and will send
             once that&apos;s set up.

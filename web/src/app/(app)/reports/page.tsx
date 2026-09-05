@@ -4,6 +4,7 @@ import {
   ContactsByStatusChart,
   DealsByMonthChart,
 } from "@/components/reports/reports-charts";
+import { PageHeader } from "@/components/ui/page-header";
 
 const STATUS_LABELS: Record<string, string> = {
   new: "New",
@@ -74,22 +75,28 @@ export default async function ReportsPage() {
   }));
 
   return (
-    <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-semibold text-foreground">Reports</h1>
+    <div>
+      <PageHeader title="Reports" description="How the pipeline and audience are trending." />
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Deals by stage</h2>
+        <div className="rounded-xl bg-surface p-5 shadow-sm">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+            Deals by stage
+          </h2>
           <DealsByStageChart data={dealsByStageData} />
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Contacts by status</h2>
+        <div className="rounded-xl bg-surface p-5 shadow-sm">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+            Contacts by status
+          </h2>
           <ContactsByStatusChart data={contactsByStatusData} />
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4 lg:col-span-2">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Deals created, last 6 months</h2>
+        <div className="rounded-xl bg-surface p-5 shadow-sm lg:col-span-2">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+            Deals created, last 6 months
+          </h2>
           <DealsByMonthChart data={dealsByMonthData} />
         </div>
       </div>

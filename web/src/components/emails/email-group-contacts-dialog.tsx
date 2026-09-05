@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -99,19 +100,17 @@ export function EmailGroupContactsDialog({
           <DialogTitle>Manage contacts</DialogTitle>
         </DialogHeader>
         {allContacts.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No contacts in this workspace yet.</p>
+          <p className="text-sm text-text-2">No contacts in this workspace yet.</p>
         ) : (
           <div className="flex max-h-64 flex-col gap-1 overflow-y-auto">
             {allContacts.map((contact) => (
               <label
                 key={contact.id}
-                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-muted"
+                className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 hover:bg-surface-2"
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={selected.has(contact.id)}
-                  onChange={() => toggle(contact.id)}
-                  className="size-4"
+                  onCheckedChange={() => toggle(contact.id)}
                 />
                 <span className="text-sm text-foreground">{contact.name}</span>
               </label>

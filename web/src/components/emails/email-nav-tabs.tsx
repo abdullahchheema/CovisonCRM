@@ -13,16 +13,16 @@ export function EmailNavTabs() {
   const pathname = usePathname();
 
   return (
-    <div className="mb-6 flex gap-1 border-b border-border">
+    <div className="mb-6 inline-flex gap-1 rounded-lg bg-surface-2 p-1">
       {TABS.map((tab) => (
         <Link
           key={tab.href}
           href={tab.href}
           className={cn(
-            "border-b-2 px-3 py-2 text-sm",
+            "rounded-md px-3 py-1.5 text-sm transition-colors",
             pathname === tab.href
-              ? "border-primary font-medium text-foreground"
-              : "border-transparent text-muted-foreground hover:text-foreground",
+              ? "bg-surface font-medium text-foreground shadow-xs"
+              : "text-text-2 hover:text-foreground",
           )}
         >
           {tab.label}

@@ -3,6 +3,8 @@ import { EmailNavTabs } from "@/components/emails/email-nav-tabs";
 import { EmailGroupFormDialog } from "@/components/emails/email-group-form-dialog";
 import { EmailGroupContactsDialog } from "@/components/emails/email-group-contacts-dialog";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export default async function EmailGroupsPage() {
   const { supabase, org } = await requireOrgContext();
@@ -26,34 +28,30 @@ export default async function EmailGroupsPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">Emails</h1>
-        <EmailGroupFormDialog organizationId={org.id} />
-      </div>
+      <PageHeader title="Emails" actions={<EmailGroupFormDialog organizationId={org.id} />} />
       <EmailNavTabs />
 
       {error && <p className="text-sm text-danger">{error.message}</p>}
 
       {!error && (groups ?? []).length === 0 && (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No audience groups yet. Create one to build a send list.
-          </p>
-        </div>
+        <EmptyState
+          title="No audience groups yet"
+          description="Create one to build a send list."
+        />
       )}
 
       {!error && (groups ?? []).length > 0 && (
-        <ul className="flex flex-col gap-2">
+        <ul className="flex flex-col divide-y divide-line-soft rounded-xl bg-surface shadow-sm">
           {(groups ?? []).map((group) => {
             const memberIds = contactIdsByGroup.get(group.id) ?? [];
             return (
               <li
                 key={group.id}
-                className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3"
+                className="flex items-center justify-between gap-4 px-4 py-3"
               >
                 <div>
                   <p className="text-sm font-medium text-foreground">{group.name}</p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-text-3">
                     {group.description ?? "—"} · {memberIds.length} contact
                     {memberIds.length === 1 ? "" : "s"}
                   </p>

@@ -71,7 +71,7 @@ export function CreateOrganizationForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Create your workspace</CardTitle>
+          <CardTitle className="font-display text-h3">Create your workspace</CardTitle>
           <CardDescription>
             This is where your team&apos;s contacts, deals, and activity will
             live.

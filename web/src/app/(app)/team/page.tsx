@@ -2,6 +2,8 @@ import { requireOrgContext } from "@/lib/supabase/org-context";
 import { InviteMemberDialog } from "@/components/team/invite-member-dialog";
 import { RevokeInvitationButton } from "@/components/team/revoke-invitation-button";
 import { MemberRow } from "@/components/team/member-row";
+import { PageHeader } from "@/components/ui/page-header";
+import { Badge } from "@/components/ui/badge";
 
 export default async function TeamPage() {
   const { supabase, org, profile } = await requireOrgContext();
@@ -28,15 +30,12 @@ export default async function TeamPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">Team</h1>
-        <InviteMemberDialog organizationId={org.id} />
-      </div>
+      <PageHeader title="Team" actions={<InviteMemberDialog organizationId={org.id} />} />
 
       {membersError && <p className="text-sm text-danger">{membersError.message}</p>}
 
-      <div className="rounded-xl border border-border bg-surface p-4">
-        <h2 className="mb-3 text-sm font-medium text-foreground">
+      <div className="rounded-xl bg-surface-2 p-5">
+        <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
           Members ({(members ?? []).length})
         </h2>
         <ul className="flex flex-col gap-2">
@@ -58,11 +57,11 @@ export default async function TeamPage() {
       </div>
 
       {(invitations ?? []).length > 0 && (
-        <div className="mt-6 rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">
+        <div className="mt-6 rounded-xl bg-surface-2 p-5">
+          <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
             Pending invitations ({(invitations ?? []).length})
           </h2>
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {(invitations ?? []).map((invitation) => (
               <li
                 key={invitation.id}
@@ -70,10 +69,10 @@ export default async function TeamPage() {
               >
                 <div>
                   <span className="text-foreground">{invitation.email}</span>
-                  <span className="ml-2 rounded-full bg-muted px-2 py-0.5 text-xs capitalize text-muted-foreground">
+                  <Badge variant="neutral" className="ml-2 capitalize">
                     {invitation.role}
-                  </span>
-                  <p className="text-xs text-muted-foreground">
+                  </Badge>
+                  <p className="mt-1 text-xs text-text-3">
                     Expires {new Date(invitation.expires_at).toLocaleDateString()}
                   </p>
                 </div>
