@@ -101,6 +101,7 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
                   type="button"
                   variant="outline"
                   size="icon"
+                  aria-label="Copy invite link"
                   onClick={() => {
                     navigator.clipboard.writeText(inviteLink);
                     toast.success("Copied to clipboard");

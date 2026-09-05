@@ -75,12 +75,21 @@ function isActive(pathname: string, href: string): boolean {
   return pathname === base || pathname.startsWith(`${base}/`);
 }
 
-function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
+function NavLink({
+  item,
+  pathname,
+  onNavigate,
+}: {
+  item: NavItem;
+  pathname: string;
+  onNavigate?: () => void;
+}) {
   const active = isActive(pathname, item.href);
   const Icon = item.icon;
   return (
     <Link
       href={item.href}
+      onClick={onNavigate}
       className={cn(
         "relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm transition-colors",
         active
@@ -97,7 +106,10 @@ function NavLink({ item, pathname }: { item: NavItem; pathname: string }) {
   );
 }
 
-export function SidebarNav() {
+// onNavigate is only passed by the mobile drawer (MobileSidebar), which
+// needs to close itself when a link is clicked — the always-visible
+// desktop sidebar has nothing to close, so it's left undefined there.
+export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
 
   return (
@@ -110,14 +122,14 @@ export function SidebarNav() {
             </p>
           )}
           {group.items.map((item) => (
-            <NavLink key={item.href} item={item} pathname={pathname} />
+            <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
           ))}
         </div>
       ))}
 
       <div className="mt-auto flex flex-col gap-1 border-t border-line-soft pt-3">
         {BOTTOM_ITEMS.map((item) => (
-          <NavLink key={item.href} item={item} pathname={pathname} />
+          <NavLink key={item.href} item={item} pathname={pathname} onNavigate={onNavigate} />
         ))}
       </div>
     </nav>

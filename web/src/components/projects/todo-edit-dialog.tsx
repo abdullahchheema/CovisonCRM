@@ -74,7 +74,13 @@ export function TodoEditDialog({ todo, members }: TodoEditDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="icon" className="size-6" onClick={(e) => e.stopPropagation()}>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-6"
+          aria-label="Edit card"
+          onClick={(e) => e.stopPropagation()}
+        >
           <Pencil className="size-3" />
         </Button>
       </DialogTrigger>

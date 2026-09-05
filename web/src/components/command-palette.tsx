@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Building2, KanbanSquare, LifeBuoy, ListTodo, User } from "lucide-react";
+import { Building2, KanbanSquare, LifeBuoy, ListTodo, Search, User } from "lucide-react";
 
 import {
   CommandDialog,
@@ -79,10 +79,12 @@ export function CommandPalette() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm text-muted-foreground hover:bg-muted"
+        aria-label="Search"
+        className="flex items-center gap-2 rounded-md border border-border bg-surface px-3 py-1.5 text-sm text-text-2 hover:bg-surface-2"
       >
-        <span>Search...</span>
-        <kbd className="ml-4 rounded border border-border bg-muted px-1.5 py-0.5 text-xs">
+        <Search className="size-4 shrink-0 sm:hidden" />
+        <span className="hidden sm:inline">Search...</span>
+        <kbd className="ml-4 hidden rounded border border-border bg-surface-2 px-1.5 py-0.5 text-xs sm:inline">
           ⌘K
         </kbd>
       </button>

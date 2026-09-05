@@ -1,8 +1,8 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { CommandPalette } from "@/components/command-palette";
 import { NotificationBell } from "@/components/notification-bell";
-import { SidebarNav } from "@/components/shell/sidebar-nav";
-import { UserMenu } from "@/components/shell/user-menu";
+import { SidebarContent } from "@/components/shell/sidebar-content";
+import { MobileSidebar } from "@/components/shell/mobile-sidebar";
 
 export default async function AppLayout({
   children,
@@ -30,39 +30,35 @@ export default async function AppLayout({
   return (
     <div className="flex min-h-svh w-full bg-bg">
       {/* Sidebar: tonal surface-2, borderless — the tone shift against the
-          bg-bg main column does the separating work instead of a border. */}
-      <aside className="flex w-64 shrink-0 flex-col gap-4 bg-surface-2 p-4">
-        <div className="flex items-center gap-2 truncate px-1 font-display text-lg text-foreground">
-          {logoSignedUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element -- signed Supabase Storage URL, not a static asset
-            <img
-              src={logoSignedUrl}
-              alt=""
-              className="size-7 shrink-0 rounded-md object-cover"
-            />
-          ) : (
-            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand text-sm text-on-brand">
-              {org.name.charAt(0).toUpperCase()}
-            </span>
-          )}
-          <span className="truncate">{org.name}</span>
-        </div>
-
-        <SidebarNav />
-
-        <div className="border-t border-line-soft pt-3">
-          <UserMenu name={profile.full_name ?? ""} email={profile.email} />
-        </div>
+          bg-bg main column does the separating work instead of a border.
+          Hidden below md — MobileSidebar's drawer (triggered from the
+          header) takes over there instead of trying to shrink this same
+          layout down to a phone width. */}
+      <aside className="hidden w-64 shrink-0 flex-col gap-4 bg-surface-2 p-4 md:flex">
+        <SidebarContent
+          orgName={org.name}
+          logoSignedUrl={logoSignedUrl}
+          profileName={profile.full_name ?? ""}
+          profileEmail={profile.email}
+        />
       </aside>
 
-      <div className="flex flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 bg-bg/80 px-6 py-3 backdrop-blur-sm">
-          <CommandPalette />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 bg-bg/80 px-4 py-3 backdrop-blur-sm md:px-6">
+          <div className="flex items-center gap-2">
+            <MobileSidebar
+              orgName={org.name}
+              logoSignedUrl={logoSignedUrl}
+              profileName={profile.full_name ?? ""}
+              profileEmail={profile.email}
+            />
+            <CommandPalette />
+          </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
           </div>
         </header>
-        <main className="flex-1 px-6 py-6 lg:px-8">
+        <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
