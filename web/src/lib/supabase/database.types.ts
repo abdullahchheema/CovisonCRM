@@ -607,6 +607,273 @@ export type Database = {
         };
         Relationships: [];
       };
+      tickets: {
+        Row: {
+          id: string;
+          organization_id: string;
+          contact_id: string | null;
+          title: string;
+          description: string | null;
+          email: string | null;
+          category: string;
+          priority: string;
+          status: string;
+          assigned_to: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          contact_id?: string | null;
+          title: string;
+          description?: string | null;
+          email?: string | null;
+          category?: string;
+          priority?: string;
+          status?: string;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          contact_id?: string | null;
+          title?: string;
+          description?: string | null;
+          email?: string | null;
+          category?: string;
+          priority?: string;
+          status?: string;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      projects: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      project_columns: {
+        Row: {
+          id: string;
+          organization_id: string;
+          project_id: string;
+          name: string;
+          position: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          project_id: string;
+          name: string;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          project_id?: string;
+          name?: string;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      project_todos: {
+        Row: {
+          id: string;
+          organization_id: string;
+          project_id: string;
+          column_id: string;
+          title: string;
+          description: string | null;
+          assigned_to: string | null;
+          created_by: string | null;
+          position: number;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          project_id: string;
+          column_id: string;
+          title: string;
+          description?: string | null;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          project_id?: string;
+          column_id?: string;
+          title?: string;
+          description?: string | null;
+          assigned_to?: string | null;
+          created_by?: string | null;
+          position?: number;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      email_groups: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          description?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      email_group_contacts: {
+        Row: {
+          organization_id: string;
+          group_id: string;
+          contact_id: string;
+          added_at: string;
+        };
+        Insert: {
+          organization_id: string;
+          group_id: string;
+          contact_id: string;
+          added_at?: string;
+        };
+        Update: {
+          organization_id?: string;
+          group_id?: string;
+          contact_id?: string;
+          added_at?: string;
+        };
+        Relationships: [];
+      };
+      email_templates: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          subject: string;
+          body: string;
+          recipient_group_id: string | null;
+          frequency: string;
+          send_date: string | null;
+          send_time: string | null;
+          day_of_week: string | null;
+          day_of_month: number | null;
+          status: string;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          subject: string;
+          body?: string;
+          recipient_group_id?: string | null;
+          frequency?: string;
+          send_date?: string | null;
+          send_time?: string | null;
+          day_of_week?: string | null;
+          day_of_month?: number | null;
+          status?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          subject?: string;
+          body?: string;
+          recipient_group_id?: string | null;
+          frequency?: string;
+          send_date?: string | null;
+          send_time?: string | null;
+          day_of_week?: string | null;
+          day_of_month?: number | null;
+          status?: string;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
