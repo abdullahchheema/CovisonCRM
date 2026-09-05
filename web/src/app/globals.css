@@ -73,6 +73,16 @@
   --on-danger: #ffffff;
   --on-info: #ffffff;
 
+  /*
+   * A permanently-dark surface — deliberately NOT redefined inside .dark.
+   * Used for the handful of surfaces meant to read as dark chrome
+   * regardless of the app's own theme (the login hero panel, marketing
+   * site dark sections): the common split-login / dark-footer pattern.
+   * Text on it is white/white-with-opacity, not --text, since --text itself
+   * flips per theme and would invert this surface's intent.
+   */
+  --ink: #120f1a;
+
   /* ---- 2. Scales ---- */
 
   /*
@@ -186,6 +196,7 @@
   --color-brand-indigo: var(--brand-indigo);
   --color-brand-violet: var(--brand-violet);
   --color-champagne: var(--champagne);
+  --color-ink: var(--ink);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);

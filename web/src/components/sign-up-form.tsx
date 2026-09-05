@@ -83,8 +83,8 @@ export function SignUpForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
+          <CardTitle className="font-display text-h3">Create your account</CardTitle>
+          <CardDescription>Start organizing your pipeline today</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
@@ -100,10 +100,10 @@ export function SignUpForm({
 
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-line" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-surface px-2 text-muted-foreground">
+                <span className="bg-surface px-2 text-text-3">
                   Or continue with email
                 </span>
               </div>
