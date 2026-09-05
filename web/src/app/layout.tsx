@@ -24,6 +24,13 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  // Resolves the opengraph-image/icon routes to an absolute URL. VERCEL_URL
+  // is set automatically by Vercel at build time to the deployment's own
+  // domain — falling back to localhost only matters for a local build,
+  // never for what actually ships.
+  metadataBase: new URL(
+    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000",
+  ),
   title: "Covison CRM",
   description: "One workspace for contacts, deals, tasks, and communication.",
 };
