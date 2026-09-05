@@ -7,11 +7,12 @@ deleting them, so history of what shipped stays visible.
 
 ## Action needed from you (not engineering work)
 
-- [ ] Apply migrations `20260905000003` through `20260905000008` to the live
+- [ ] Apply migrations `20260905000003` through `20260905000009` to the live
       Supabase project (SQL Editor, same as the first 15) — tickets,
-      projects/kanban, email groups/templates, notifications, and saved
-      views schema + RLS. Re-run `supabase/tests/rls_meta.sql` after; both
-      queries must return 0 rows.
+      projects/kanban, email groups/templates, notifications, saved views,
+      and the activities extension (ticket_id + project_id FK) schema +
+      RLS. Re-run `supabase/tests/rls_meta.sql` after; both queries must
+      return 0 rows.
 - [ ] Decide on merging `hotfix/w0-security-hardening` into `master` (legacy
       Go app security patches — JWT leak, permission checks, token expiry).
       Merging triggers a live deploy of the old app, so left for your call.
@@ -22,10 +23,6 @@ deleting them, so history of what shipped stays visible.
 - [ ] Saved views on companies/tickets/tasks — schema and component
       (SavedViewsMenu) are already generic; contacts is the only page
       wired up so far.
-- [ ] Activity timeline on ticket and project detail pages. Blocked on a
-      small migration: `activities.CHECK` currently only allows
-      contact_id/company_id/deal_id/project_id — projects already fits,
-      tickets needs `ticket_id` added to the table and the CHECK.
 
 ## Deferred — needs an external account or a bigger schema decision
 
@@ -39,6 +36,10 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] Activity/notes timeline on ticket and project detail pages —
+      activities.ticket_id added, CHECK constraint extended, project_id FK
+      finished (was reserved with no FK since the projects table didn't
+      exist yet when activities was first created).
 - [x] CSV import for contacts — column mapping, per-row validation,
       company auto-create, chunked inserts (papaparse).
 - [x] Saved views on contacts (team-shareable, generic component/schema
