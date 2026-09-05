@@ -105,6 +105,87 @@ export default async function ContactDetailPage({
               <dt className="text-muted-foreground">Owner</dt>
               <dd className="text-foreground">{ownerName ?? "Unassigned"}</dd>
             </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Priority</dt>
+              <dd className="text-foreground capitalize">{contact.priority ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">City / Country</dt>
+              <dd className="text-foreground">
+                {[contact.city, contact.country].filter(Boolean).join(", ") || "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Niche</dt>
+              <dd className="text-foreground">{contact.niche ?? "—"}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Website</dt>
+              <dd className="text-foreground">
+                {contact.website ? (
+                  <a
+                    href={contact.website}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline"
+                  >
+                    {contact.website}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">LinkedIn</dt>
+              <dd className="text-foreground">
+                {contact.linkedin_url ? (
+                  <a
+                    href={contact.linkedin_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="hover:underline"
+                  >
+                    Profile
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface p-4">
+          <h2 className="mb-3 text-sm font-medium text-foreground">Lead details</h2>
+          <dl className="flex flex-col gap-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Expected revenue</dt>
+              <dd className="text-foreground">
+                {contact.expected_revenue != null
+                  ? new Intl.NumberFormat(undefined, {
+                      style: "currency",
+                      currency: "USD",
+                    }).format(contact.expected_revenue)
+                  : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Expected close</dt>
+              <dd className="text-foreground">
+                {contact.expected_close
+                  ? new Date(contact.expected_close).toLocaleDateString()
+                  : "—"}
+              </dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-muted-foreground">Probability</dt>
+              <dd className="text-foreground">
+                {contact.probability
+                  ? `${Math.round(Number(contact.probability) * 100)}%`
+                  : "—"}
+              </dd>
+            </div>
           </dl>
         </div>
 
