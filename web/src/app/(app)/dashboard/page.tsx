@@ -1,26 +1,33 @@
 import Link from "next/link";
 import { requireOrgContext } from "@/lib/supabase/org-context";
-import { StatCard } from "@/components/dashboard/stat-card";
+import { PipelineHero } from "@/components/dashboard/pipeline-hero";
+import { MiniMetrics } from "@/components/dashboard/mini-metrics";
+import { PipelineByStage } from "@/components/dashboard/pipeline-by-stage";
+import { ActivityFeed } from "@/components/dashboard/activity-feed";
 
 export default async function DashboardPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const nowIso = new Date().toISOString();
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const fourteenDaysAgoDate = new Date(now);
+  fourteenDaysAgoDate.setDate(fourteenDaysAgoDate.getDate() - 14);
+  const fourteenDaysAgo = fourteenDaysAgoDate.toISOString();
 
-  // PostgREST filters don't support raw SQL subqueries — "open deals" (not
-  // in a won/lost stage) needs the closed stage ids resolved first, then
-  // passed to deals as a plain array via .not(col, 'in', array), which
-  // supabase-js serializes correctly on its own.
-  const { data: closedStages } = await supabase
-    .from("pipeline_stages")
+  const { data: defaultPipeline } = await supabase
+    .from("pipelines")
     .select("id")
-    .or("is_won.eq.true,is_lost.eq.true");
-  const closedStageIds = (closedStages ?? []).map((s) => s.id);
+    .eq("is_default", true)
+    .is("deleted_at", null)
+    .single();
 
-  let openDealsQuery = supabase.from("deals").select("id, value").is("deleted_at", null);
-  if (closedStageIds.length > 0) {
-    openDealsQuery = openDealsQuery.not("stage_id", "in", `(${closedStageIds.join(",")})`);
-  }
+  const { data: stages } = defaultPipeline
+    ? await supabase
+        .from("pipeline_stages")
+        .select("id, name, position, is_won, is_lost")
+        .eq("pipeline_id", defaultPipeline.id)
+        .order("position")
+    : { data: [] as { id: string; name: string; position: number; is_won: boolean; is_lost: boolean }[] };
 
   const [
     { count: contactCount },
@@ -33,7 +40,10 @@ export default async function DashboardPage() {
   ] = await Promise.all([
     supabase.from("contacts").select("*", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("companies").select("*", { count: "exact", head: true }).is("deleted_at", null),
-    openDealsQuery,
+    supabase
+      .from("deals")
+      .select("id, value, stage_id, created_at")
+      .is("deleted_at", null),
     supabase
       .from("tasks")
       .select("*", { count: "exact", head: true })
@@ -50,7 +60,7 @@ export default async function DashboardPage() {
       .select("id, type, body, occurred_at, contact_id, company_id, deal_id")
       .is("deleted_at", null)
       .order("occurred_at", { ascending: false })
-      .limit(5),
+      .limit(6),
     supabase
       .from("tasks")
       .select("id, title, due_at")
@@ -61,7 +71,45 @@ export default async function DashboardPage() {
       .limit(5),
   ]);
 
-  const pipelineValue = (openDeals ?? []).reduce((sum, deal) => sum + deal.value, 0);
+  const stageList = stages ?? [];
+  const closedStageIds = new Set(stageList.filter((s) => s.is_won || s.is_lost).map((s) => s.id));
+  const openDealsOnly = (openDeals ?? []).filter((d) => !closedStageIds.has(d.stage_id));
+  const pipelineValue = openDealsOnly.reduce((sum, deal) => sum + deal.value, 0);
+
+  // Pipeline by stage — every stage (including won/lost), value + count.
+  const stageData = stageList.map((stage) => {
+    const dealsInStage = (openDeals ?? []).filter((d) => d.stage_id === stage.id);
+    return {
+      id: stage.id,
+      name: stage.name,
+      value: dealsInStage.reduce((sum, d) => sum + d.value, 0),
+      count: dealsInStage.length,
+      isWon: stage.is_won,
+      isLost: stage.is_lost,
+    };
+  });
+
+  // Sparkline: cumulative open-pipeline value by day of deal creation, over
+  // the trailing 14 days — real derived data, not a decorative squiggle.
+  const recentOpenDeals = openDealsOnly.filter((d) => d.created_at >= fourteenDaysAgo);
+  const dayBuckets = new Map<string, number>();
+  for (let i = 13; i >= 0; i--) {
+    const bucketDate = new Date(now);
+    bucketDate.setDate(bucketDate.getDate() - i);
+    dayBuckets.set(bucketDate.toISOString().slice(0, 10), 0);
+  }
+  for (const deal of recentOpenDeals) {
+    const day = deal.created_at.slice(0, 10);
+    if (dayBuckets.has(day)) {
+      dayBuckets.set(day, (dayBuckets.get(day) ?? 0) + deal.value);
+    }
+  }
+  const baselineValue = pipelineValue - recentOpenDeals.reduce((sum, d) => sum + d.value, 0);
+  let running = baselineValue;
+  const trend = Array.from(dayBuckets.values()).map((v) => {
+    running += v;
+    return running;
+  });
 
   const contactIds = [
     ...new Set((recentActivities ?? []).map((a) => a.contact_id).filter((v): v is string => !!v)),
@@ -80,86 +128,87 @@ export default async function DashboardPage() {
   const contactNameById = new Map((activityContacts ?? []).map((c) => [c.id, c.name]));
   const companyNameById = new Map((activityCompanies ?? []).map((c) => [c.id, c.name]));
 
+  const activityData = (recentActivities ?? []).map((activity) => {
+    const subject = activity.contact_id
+      ? contactNameById.get(activity.contact_id)
+      : activity.company_id
+        ? companyNameById.get(activity.company_id)
+        : null;
+    const href = activity.contact_id
+      ? `/contacts/${activity.contact_id}`
+      : activity.company_id
+        ? `/companies/${activity.company_id}`
+        : undefined;
+    return {
+      id: activity.id,
+      body: activity.body,
+      type: activity.type,
+      occurredAt: activity.occurred_at,
+      subject: subject ?? null,
+      href,
+    };
+  });
+
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+
   return (
     <div>
-      <h1 className="text-xl font-semibold text-foreground">
-        {org.name}
-      </h1>
-      <p className="mt-1 text-sm text-muted-foreground">Signed in as {profile.email}</p>
+      <p className="font-display text-hero text-foreground">
+        {greeting}, {profile.full_name?.split(" ")[0] || "there"}
+      </p>
+      <p className="mt-1 text-sm text-text-2">{org.name}</p>
 
-      <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Contacts" value={String(contactCount ?? 0)} />
-        <StatCard label="Companies" value={String(companyCount ?? 0)} />
-        <StatCard
-          label="Open pipeline"
-          value={new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(
-            pipelineValue,
-          )}
-          hint={`${(openDeals ?? []).length} open deals`}
-        />
-        <StatCard
-          label="Open tasks"
-          value={String(openTaskCount ?? 0)}
-          hint={overdueTaskCount ? `${overdueTaskCount} overdue` : undefined}
+      <div className="mt-8 grid gap-4 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <PipelineHero value={pipelineValue} dealCount={openDealsOnly.length} trend={trend} />
+        </div>
+        <MiniMetrics
+          metrics={[
+            { label: "Contacts", value: String(contactCount ?? 0) },
+            { label: "Companies", value: String(companyCount ?? 0) },
+            {
+              label: "Open tasks",
+              value: String(openTaskCount ?? 0),
+              hint: overdueTaskCount ? `${overdueTaskCount} overdue` : undefined,
+            },
+          ]}
         />
       </div>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2">
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Recent activity</h2>
-          {(recentActivities ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing yet.</p>
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {(recentActivities ?? []).map((activity) => {
-                const subject = activity.contact_id
-                  ? contactNameById.get(activity.contact_id)
-                  : activity.company_id
-                    ? companyNameById.get(activity.company_id)
-                    : null;
-                const href = activity.contact_id
-                  ? `/contacts/${activity.contact_id}`
-                  : activity.company_id
-                    ? `/companies/${activity.company_id}`
-                    : undefined;
-                return (
-                  <li key={activity.id} className="text-sm">
-                    <p className="text-foreground">
-                      {activity.body ?? `${activity.type} logged`}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {subject && href ? (
-                        <Link href={href} className="hover:underline">
-                          {subject}
-                        </Link>
-                      ) : null}
-                      {subject ? " · " : ""}
-                      {new Date(activity.occurred_at).toLocaleString()}
-                    </p>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+      {stageData.length > 0 && (
+        <div className="mt-8 rounded-xl bg-surface-2 p-6">
+          <PipelineByStage stages={stageData} />
+        </div>
+      )}
+
+      <div className="mt-8 grid gap-6 lg:grid-cols-5">
+        <div className="lg:col-span-3 rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Recent activity
+          </h2>
+          <ActivityFeed activities={activityData} />
         </div>
 
-        <div className="rounded-xl border border-border bg-surface p-4">
-          <h2 className="mb-3 text-sm font-medium text-foreground">Upcoming tasks</h2>
+        <div className="lg:col-span-2 rounded-xl bg-surface p-6 shadow-sm">
+          <h2 className="mb-4 text-xs font-medium uppercase tracking-wide text-text-2">
+            Upcoming tasks
+          </h2>
           {(upcomingTasks ?? []).length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing due.</p>
+            <p className="text-sm text-text-2">Nothing due.</p>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-3">
               {(upcomingTasks ?? []).map((task) => (
                 <li key={task.id} className="flex items-center justify-between text-sm">
                   <span className="text-foreground">{task.title}</span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs tabular-nums text-text-3">
                     {task.due_at ? new Date(task.due_at).toLocaleDateString() : ""}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-          <Link href="/tasks" className="mt-3 inline-block text-xs text-primary hover:underline">
+          <Link href="/tasks" className="mt-4 inline-block text-xs text-primary hover:underline">
             View all tasks →
           </Link>
         </div>
