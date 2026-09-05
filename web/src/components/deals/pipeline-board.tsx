@@ -13,8 +13,15 @@ import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { DealCard } from "@/components/deals/deal-card";
 import { createClient } from "@/lib/supabase/client";
+
+function toCsvValue(value: string): string {
+  return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
 
 interface Deal {
   id: string;
@@ -34,6 +41,10 @@ interface PipelineBoardProps {
   companies: { id: string; name: string }[];
   members: { id: string; name: string }[];
   currentUserId: string;
+  organizationId: string;
+  companyNameById: Record<string, string>;
+  memberNameById: Record<string, string>;
+  savedViews: SavedView[];
 }
 
 function DraggableCard({
@@ -96,9 +107,14 @@ export function PipelineBoard({
   companies,
   members,
   currentUserId,
+  organizationId,
+  companyNameById,
+  memberNameById,
+  savedViews,
 }: PipelineBoardProps) {
   const [deals, setDeals] = useState(initialDeals);
   const [onlyMine, setOnlyMine] = useState(false);
+  const [search, setSearch] = useState("");
 
   // DealCard's manual stage <select> (kept for keyboard/accessibility —
   // dnd-kit's pointer drag isn't keyboard-operable) triggers router.refresh()
@@ -128,16 +144,57 @@ export function PipelineBoard({
     [contacts],
   );
 
+  const visibleDeals = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return deals.filter((deal) => {
+      if (onlyMine && deal.owner_id !== currentUserId) return false;
+      if (term && !deal.name.toLowerCase().includes(term)) return false;
+      return true;
+    });
+  }, [deals, onlyMine, currentUserId, search]);
+
   const dealsByStage = useMemo(() => {
-    const visibleDeals = onlyMine
-      ? deals.filter((deal) => deal.owner_id === currentUserId)
-      : deals;
     const map = new Map<string, Deal[]>();
     for (const stage of stages) {
       map.set(stage.id, visibleDeals.filter((deal) => deal.stage_id === stage.id));
     }
     return map;
-  }, [deals, stages, onlyMine, currentUserId]);
+  }, [visibleDeals, stages]);
+
+  const currentFilters = { search, onlyMine };
+
+  const applyFilters = (filters: Record<string, unknown>) => {
+    if (typeof filters.search === "string") setSearch(filters.search);
+    if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
+  };
+
+  const stageNameById = useMemo(
+    () => new Map(stages.map((s) => [s.id, s.name])),
+    [stages],
+  );
+
+  const exportCsv = () => {
+    const header = ["Name", "Stage", "Value", "Currency", "Contact", "Company", "Owner"];
+    const rows = visibleDeals.map((deal) => [
+      deal.name,
+      stageNameById.get(deal.stage_id) ?? "",
+      String(deal.value),
+      deal.currency,
+      deal.contact_id ? (contactNameById.get(deal.contact_id) ?? "") : "",
+      deal.company_id ? (companyNameById[deal.company_id] ?? "") : "",
+      deal.owner_id ? (memberNameById[deal.owner_id] ?? "") : "",
+    ]);
+    const csv = [header, ...rows]
+      .map((row) => row.map(toCsvValue).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `deals-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -169,15 +226,34 @@ export function PipelineBoard({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <label className="mb-3 flex w-fit items-center gap-2 text-sm text-muted-foreground">
-        <input
-          type="checkbox"
-          checked={onlyMine}
-          onChange={(e) => setOnlyMine(e.target.checked)}
-          className="size-4"
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <Input
+          placeholder="Search deals..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
         />
-        Only mine
-      </label>
+        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+          <input
+            type="checkbox"
+            checked={onlyMine}
+            onChange={(e) => setOnlyMine(e.target.checked)}
+            className="size-4"
+          />
+          Only mine
+        </label>
+        <SavedViewsMenu
+          organizationId={organizationId}
+          currentUserId={currentUserId}
+          entityType="deals"
+          initialViews={savedViews}
+          currentFilters={currentFilters}
+          onApply={applyFilters}
+        />
+        <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
+          Export CSV
+        </Button>
+      </div>
       <div className="flex gap-4 overflow-x-auto pb-4">
         {stages.map((stage) => (
           <div key={stage.id} className="w-64 shrink-0">

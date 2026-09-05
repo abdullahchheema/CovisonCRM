@@ -21,26 +21,41 @@ export default async function PipelinePage() {
     );
   }
 
-  const [{ data: stages }, { data: deals }, { data: contacts }, { data: companies }, members] =
-    await Promise.all([
-      supabase
-        .from("pipeline_stages")
-        .select("id, name, position")
-        .eq("pipeline_id", pipeline.id)
-        .order("position"),
-      supabase
-        .from("deals")
-        .select("id, name, value, currency, stage_id, contact_id, company_id, owner_id")
-        .eq("pipeline_id", pipeline.id)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
-      supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
-      supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
-      getOrgMemberOptions(supabase),
-    ]);
+  const [
+    { data: stages },
+    { data: deals },
+    { data: contacts },
+    { data: companies },
+    members,
+    { data: savedViews },
+  ] = await Promise.all([
+    supabase
+      .from("pipeline_stages")
+      .select("id, name, position")
+      .eq("pipeline_id", pipeline.id)
+      .order("position"),
+    supabase
+      .from("deals")
+      .select("id, name, value, currency, stage_id, contact_id, company_id, owner_id")
+      .eq("pipeline_id", pipeline.id)
+      .is("deleted_at", null)
+      .order("created_at", { ascending: false }),
+    supabase.from("contacts").select("id, name").is("deleted_at", null).order("name"),
+    supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
+    getOrgMemberOptions(supabase),
+    supabase
+      .from("saved_views")
+      .select("id, name, filters, is_shared, user_id")
+      .eq("entity_type", "deals")
+      .order("name"),
+  ]);
 
   const stageList = stages ?? [];
   const totalValue = (deals ?? []).reduce((sum, deal) => sum + deal.value, 0);
+  const companyNameById = Object.fromEntries(
+    (companies ?? []).map((company) => [company.id, company.name]),
+  );
+  const memberNameById = Object.fromEntries(members.map((m) => [m.id, m.name]));
 
   return (
     <div>
@@ -72,6 +87,10 @@ export default async function PipelinePage() {
         companies={companies ?? []}
         members={members}
         currentUserId={profile.id}
+        organizationId={org.id}
+        companyNameById={companyNameById}
+        memberNameById={memberNameById}
+        savedViews={savedViews ?? []}
       />
     </div>
   );
