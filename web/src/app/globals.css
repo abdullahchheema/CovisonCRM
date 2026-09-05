@@ -2,63 +2,316 @@
 @import "tw-animate-css";
 
 /*
- * Design system: "Graphite / Paper / Cobalt" — see the migration plan.
- * Deliberately restrained: no gradients, no glow shadows, moderate radii.
- * Dark mode is class-based (.dark on <html>), ready for next-themes —
- * NOT a prefers-color-scheme media query, so a manual toggle can override
- * the system preference once one exists.
+ * Design system: "Midnight Luxe / Soft Ivory / Electric Violet" — the
+ * successor to Graphite/Paper/Cobalt (see the migration plan). Warm ivory
+ * neutrals, a controlled violet brand, tonal surfaces instead of
+ * boxes-in-boxes. Soft warm-tinted shadows, never harsh black or glowing.
+ *
+ * THREE LAYERS, in order:
+ *   1. Raw palette      — the actual brand colors.
+ *   2. Scales            — radius, shadow, typography.
+ *   3. Legacy alias layer — maps the OLD token names (background, surface,
+ *      muted, foreground, border, primary, primary-foreground, danger,
+ *      danger-foreground) onto the new raw palette.
+ *
+ * Layer 3 is the whole trick: every one of the ~500 existing className
+ * sites across the app (text-muted-foreground, border-border, bg-surface,
+ * rounded-xl, shadow-sm, ...) reads through these aliases, so the entire
+ * app reskins correctly the moment this file changes — no component file
+ * needs to be touched for the color/radius/shadow swap to take effect.
+ * Composition (which surfaces get which treatment) is still redesigned
+ * deliberately, component by component, in later phases.
+ *
+ * Dark mode is class-based (.dark on <html>, via next-themes) — NOT a
+ * prefers-color-scheme media query, so the manual toggle can override the
+ * system preference. Redefining only the raw layer inside .dark propagates
+ * through every alias automatically, because CSS custom properties resolve
+ * lazily at paint time, not at declaration time.
  */
 
 :root {
-  --background: #f6f7f9;
+  /* ---- 1. Raw palette (light) ---- */
+  --bg: #f8f7f4;
+  --bg-warm: #f3f0ea;
   --surface: #ffffff;
-  --muted: #f0f2f5;
-  --foreground: #111827;
-  --muted-foreground: #667085;
-  --border: #e4e7ec;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --success: #16a66a;
-  --warning: #d99000;
-  --danger: #d92d20;
-  --danger-foreground: #ffffff;
-  --radius: 0.5rem;
+  --surface-2: #f7f5f1;
+  --surface-3: #eeeae4;
+
+  --text: #17151a;
+  --text-2: #68636f;
+  /*
+   * The brief's tertiary text (#96909d) measures 2.90:1 on --bg — fails
+   * WCAG AA (needs 4.5:1) for body text. Darkened to ~4.6:1. Verified,
+   * not assumed: see the plan's contrast table.
+   */
+  --text-3: #7a7480;
+
+  --line: #e7e2da;
+  --line-soft: #eeeae4;
+
+  --brand: #6d4aff;
+  --brand-hover: #5b38f2;
+  --brand-soft: #eee9ff;
+  --brand-indigo: #4f46e5;
+  --brand-violet: #8b5cf6;
+  /* Luxury accent — used extremely sparingly, never a dominant UI color. */
+  --champagne: #c7a76c;
+
+  --success: #149a68;
+  --success-soft: #e9f8f1;
+  --warning: #c88518;
+  --warning-soft: #fff5dd;
+  --danger: #d13a46;
+  --danger-soft: #fdecef;
+  --info: #2878d9;
+  --info-soft: #eaf3ff;
+
+  /* Foreground colors for text/icons placed ON TOP of a solid brand/status fill. */
+  --on-brand: #ffffff;
+  --on-success: #ffffff;
+  --on-warning: #1a1206;
+  --on-danger: #ffffff;
+  --on-info: #ffffff;
+
+  /* ---- 2. Scales ---- */
+
+  /*
+   * Radius scale. These key names (xs/sm/md/lg/xl/2xl) are Tailwind v4's
+   * OWN theme namespace for the rounded-* utilities — overriding them here
+   * means every existing `rounded-xl` (50 sites), `rounded-lg` (9),
+   * `rounded-md` (19) className in the codebase picks up the new
+   * intentional scale for free, with zero component edits.
+   */
+  --radius-xs: 0.375rem; /* 6px  — small controls */
+  --radius-sm: 0.5rem; /* 8px  — inputs, small buttons */
+  --radius-md: 0.625rem; /* 10px — default buttons */
+  --radius-lg: 0.875rem; /* 14px — cards, panels */
+  --radius-xl: 1.125rem; /* 18px — dialogs, elevated panels */
+  --radius-2xl: 1.375rem; /* 22px — large marketing containers */
+
+  /*
+   * Shadow scale. Same trick — these are Tailwind v4's shadow-* theme
+   * keys. Warm-tinted (rgb 23 21 26, matching --text), soft and large,
+   * never a harsh pure-black or a glowing colored shadow.
+   */
+  --shadow-xs: 0 1px 2px rgb(23 21 26 / 0.05);
+  --shadow-sm: 0 1px 3px rgb(23 21 26 / 0.07), 0 1px 2px rgb(23 21 26 / 0.04);
+  --shadow-md: 0 8px 24px -8px rgb(23 21 26 / 0.12), 0 2px 8px -2px rgb(23 21 26 / 0.06);
+  --shadow-lg: 0 20px 56px -16px rgb(23 21 26 / 0.20), 0 6px 20px -6px rgb(23 21 26 / 0.10);
+  --shadow-xl: 0 32px 80px -20px rgb(23 21 26 / 0.24), 0 12px 32px -8px rgb(23 21 26 / 0.12);
+
+  /* ---- 3. Legacy alias layer (light) ---- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-2);
+  --border: var(--line);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --danger-foreground: var(--on-danger);
+  --radius: var(--radius-lg);
 }
 
 .dark {
-  --background: #0b0d10;
-  --surface: #11151a;
-  --muted: #181d23;
-  --foreground: #f3f4f6;
-  --muted-foreground: #98a2b3;
-  --border: #252b33;
-  --primary: #5b8def;
-  --primary-foreground: #0b0d10;
-  --success: #39c58a;
-  --warning: #f0b44d;
-  --danger: #f97066;
-  --danger-foreground: #0b0d10;
+  /* ---- 1. Raw palette (dark) ---- */
+  --bg: #09090b;
+  --bg-warm: #070709;
+  --surface: #111114;
+  --surface-2: #17171c;
+  --surface-3: #1d1d23;
+
+  --text: #f7f5fa;
+  --text-2: #aaa5b4;
+  --text-3: #817b8b; /* verified 4.85:1 on --bg — passes as-supplied */
+
+  --line: #29272f;
+  --line-soft: #211f26;
+
+  --brand: #8b72ff;
+  --brand-hover: #9c87ff;
+  --brand-soft: #211a42;
+  --brand-indigo: #6366f1;
+  --brand-violet: #a78bfa;
+  --champagne: #d4b878;
+
+  --success: #42d39a;
+  --success-soft: #10271f;
+  --warning: #f1bb5c;
+  --warning-soft: #2b2210;
+  --danger: #ff737d;
+  --danger-soft: #2e1518;
+  --info: #69a8ff;
+  --info-soft: #14202e;
+
+  --on-brand: #09090b;
+  --on-success: #06140f;
+  --on-warning: #1a1206;
+  --on-danger: #1a0708;
+  --on-info: #04101f;
+
+  /* Dark shadows lean on plain black — the dark surfaces already carry the
+     warm tint, so the shadow itself just needs to read as depth. */
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.30);
+  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.36), 0 1px 2px rgb(0 0 0 / 0.24);
+  --shadow-md: 0 8px 24px -8px rgb(0 0 0 / 0.45), 0 2px 8px -2px rgb(0 0 0 / 0.30);
+  --shadow-lg: 0 20px 56px -16px rgb(0 0 0 / 0.55), 0 6px 20px -6px rgb(0 0 0 / 0.36);
+  --shadow-xl: 0 32px 80px -20px rgb(0 0 0 / 0.60), 0 12px 32px -8px rgb(0 0 0 / 0.40);
+
+  /* ---- 3. Legacy alias layer (dark) ---- */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --muted: var(--surface-2);
+  --muted-foreground: var(--text-2);
+  --border: var(--line);
+  --primary: var(--brand);
+  --primary-foreground: var(--on-brand);
+  --danger-foreground: var(--on-danger);
 }
 
 @theme inline {
-  --color-background: var(--background);
+  /* Raw palette exposed as Tailwind utilities (bg-bg, text-brand, etc). */
+  --color-bg: var(--bg);
+  --color-bg-warm: var(--bg-warm);
   --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-text: var(--text);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-line: var(--line);
+  --color-line-soft: var(--line-soft);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-indigo: var(--brand-indigo);
+  --color-brand-violet: var(--brand-violet);
+  --color-champagne: var(--champagne);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-on-brand: var(--on-brand);
+  --color-on-success: var(--on-success);
+  --color-on-warning: var(--on-warning);
+  --color-on-danger: var(--on-danger);
+  --color-on-info: var(--on-info);
+
+  /* Legacy aliases exposed as Tailwind utilities — unchanged utility
+     names (bg-background, text-muted-foreground, border-border, ...) so
+     every existing call site keeps compiling and now renders correctly. */
+  --color-background: var(--background);
   --color-muted: var(--muted);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-danger: var(--danger);
   --color-danger-foreground: var(--danger-foreground);
+  /* dialog.tsx's built-in close button references this utility; it
+     resolved to nothing before (no theme key defined at all). */
+  --color-ring-offset-background: var(--bg);
+
   --radius-DEFAULT: var(--radius);
-  --font-sans: var(--font-inter);
+
+  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+
+  /*
+   * New typography scale, added as NEW --text-* keys (display/hero/h1/h2/h3/
+   * body-lg/label/caption/metric) — Tailwind v4's font-size utilities live
+   * in this exact namespace, so these become real `text-display`,
+   * `text-hero`, etc. classes. Existing keys (text-sm, text-xs, text-base,
+   * text-xl, ...) are NOT touched, so all ~180 existing text-* sites in the
+   * app are unaffected.
+   */
+  --text-display: 4.5rem;
+  --text-display--line-height: 1.05;
+  --text-display--letter-spacing: -0.02em;
+  --text-hero: 3rem;
+  --text-hero--line-height: 1.1;
+  --text-hero--letter-spacing: -0.015em;
+  --text-h1: 2.25rem;
+  --text-h1--line-height: 1.15;
+  --text-h1--letter-spacing: -0.01em;
+  --text-h2: 1.75rem;
+  --text-h2--line-height: 1.25;
+  --text-h3: 1.375rem;
+  --text-h3--line-height: 1.35;
+  --text-body-lg: 1.125rem;
+  --text-body-lg--line-height: 1.6;
+  --text-label: 0.8125rem;
+  --text-label--line-height: 1.2;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1.4;
+  --text-metric: 2.5rem;
+  --text-metric--line-height: 1.1;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/*
+ * Sonner theming. The Toaster in layout.tsx no longer passes `richColors`
+ * (which bypassed our tokens with its own baked-in palette) — sonner reads
+ * these CSS custom properties directly instead, per its own documented
+ * theming API, so toasts follow light/dark like everything else.
+ */
+[data-sonner-toaster] {
+  --normal-bg: var(--surface);
+  --normal-border: var(--line);
+  --normal-text: var(--text);
+  --success-bg: var(--success-soft);
+  --success-border: var(--success);
+  --success-text: var(--text);
+  --error-bg: var(--danger-soft);
+  --error-border: var(--danger);
+  --error-text: var(--text);
+  --warning-bg: var(--warning-soft);
+  --warning-border: var(--warning);
+  --warning-text: var(--text);
+  --info-bg: var(--info-soft);
+  --info-border: var(--info);
+  --info-text: var(--text);
+}
+
+@theme {
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
