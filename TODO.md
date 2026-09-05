@@ -25,9 +25,6 @@ deleting them, so history of what shipped stays visible.
       small layout change first rather than being prop-plumbing.
 - [ ] CSV import for companies (contacts is the only entity with import
       so far).
-- [ ] Search/filter on the pipeline board (deals) — currently only has
-      the "only mine" toggle, no text search, no CSV export, no saved
-      views.
 
 ## Deferred — needs an external account or a bigger schema decision
 
@@ -41,6 +38,8 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] Search, CSV export, and saved views on the pipeline board (deals) —
+      the last list view without this treatment.
 - [x] CSV export on tickets and tasks; bulk delete + select-all on
       tickets (matches contacts/companies).
 - [x] Saved views + client-side search/priority filters on tasks
