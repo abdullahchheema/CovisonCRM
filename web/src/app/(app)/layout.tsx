@@ -1,24 +1,8 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
-import { LogoutButton } from "@/components/logout-button";
 import { CommandPalette } from "@/components/command-palette";
 import { NotificationBell } from "@/components/notification-bell";
-import { ThemeToggle } from "@/components/theme-toggle";
-import Link from "next/link";
-
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Overview" },
-  { href: "/contacts", label: "Contacts" },
-  { href: "/companies", label: "Companies" },
-  { href: "/pipeline", label: "Pipeline" },
-  { href: "/tasks", label: "Tasks" },
-  { href: "/tickets", label: "Tickets" },
-  { href: "/projects", label: "Projects" },
-  { href: "/emails/templates", label: "Emails" },
-  { href: "/tags", label: "Tags" },
-  { href: "/reports", label: "Reports" },
-  { href: "/team", label: "Team" },
-  { href: "/settings", label: "Settings" },
-];
+import { SidebarNav } from "@/components/shell/sidebar-nav";
+import { UserMenu } from "@/components/shell/user-menu";
 
 export default async function AppLayout({
   children,
@@ -44,44 +28,43 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-svh w-full">
-      <aside className="flex w-56 shrink-0 flex-col border-r border-border bg-surface p-4">
-        <div className="mb-6 flex items-center gap-2 truncate font-semibold text-foreground">
+    <div className="flex min-h-svh w-full bg-bg">
+      {/* Sidebar: tonal surface-2, borderless — the tone shift against the
+          bg-bg main column does the separating work instead of a border. */}
+      <aside className="flex w-64 shrink-0 flex-col gap-4 bg-surface-2 p-4">
+        <div className="flex items-center gap-2 truncate px-1 font-display text-lg text-foreground">
           {logoSignedUrl ? (
             // eslint-disable-next-line @next/next/no-img-element -- signed Supabase Storage URL, not a static asset
             <img
               src={logoSignedUrl}
               alt=""
-              className="size-6 shrink-0 rounded object-cover"
+              className="size-7 shrink-0 rounded-md object-cover"
             />
-          ) : null}
+          ) : (
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-md bg-brand text-sm text-on-brand">
+              {org.name.charAt(0).toUpperCase()}
+            </span>
+          )}
           <span className="truncate">{org.name}</span>
         </div>
-        <nav className="flex flex-col gap-1 text-sm">
-          {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="rounded-md px-3 py-2 text-foreground hover:bg-muted"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+
+        <SidebarNav />
+
+        <div className="border-t border-line-soft pt-3">
+          <UserMenu name={profile.full_name ?? ""} email={profile.email} />
+        </div>
       </aside>
+
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-border px-6 py-4">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 bg-bg/80 px-6 py-3 backdrop-blur-sm">
           <CommandPalette />
-          <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">
-              {profile.email}
-            </span>
+          <div className="flex items-center gap-2">
             <NotificationBell />
-            <ThemeToggle />
-            <LogoutButton />
           </div>
         </header>
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 px-6 py-6 lg:px-8">
+          <div className="mx-auto w-full max-w-6xl">{children}</div>
+        </main>
       </div>
     </div>
   );
