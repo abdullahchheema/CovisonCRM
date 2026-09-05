@@ -22,10 +22,6 @@ deleting them, so history of what shipped stays visible.
 - [ ] Saved views on companies/tickets/tasks — schema and component
       (SavedViewsMenu) are already generic; contacts is the only page
       wired up so far.
-- [ ] CSV import for contacts (export already exists). Needs: column
-      mapping UI, dry-run/validation step, per-row error reporting — don't
-      repeat the legacy bug where import was fully synchronous with no
-      size limit.
 - [ ] Activity timeline on ticket and project detail pages. Blocked on a
       small migration: `activities.CHECK` currently only allows
       contact_id/company_id/deal_id/project_id — projects already fits,
@@ -43,6 +39,8 @@ deleting them, so history of what shipped stays visible.
 
 ## Done (recent)
 
+- [x] CSV import for contacts — column mapping, per-row validation,
+      company auto-create, chunked inserts (papaparse).
 - [x] Saved views on contacts (team-shareable, generic component/schema
       ready for other list pages).
 - [x] In-app notifications (assignment-triggered, SECURITY DEFINER
