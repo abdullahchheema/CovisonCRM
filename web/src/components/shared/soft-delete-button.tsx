@@ -25,6 +25,7 @@ type SoftDeletableTable =
   | "tags"
   | "tickets"
   | "projects"
+  | "project_todos"
   | "email_groups"
   | "email_templates";
 

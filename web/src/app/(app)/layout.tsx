@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: "/pipeline", label: "Pipeline" },
   { href: "/tasks", label: "Tasks" },
   { href: "/tickets", label: "Tickets" },
+  { href: "/projects", label: "Projects" },
   { href: "/tags", label: "Tags" },
   { href: "/reports", label: "Reports" },
   { href: "/team", label: "Team" },
