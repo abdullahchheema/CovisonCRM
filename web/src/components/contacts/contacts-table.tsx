@@ -4,8 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Download, Tag as TagIcon, Trash2 } from "lucide-react";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { createClient } from "@/lib/supabase/client";
 
@@ -29,6 +34,16 @@ const STATUS_LABELS: Record<string, string> = {
   connected: "Connected",
   attempted: "Attempted",
   won: "Won",
+};
+
+// A status's job here is state, not identity — the semantic colors, not a
+// categorical palette.
+const STATUS_VARIANT: Record<string, "info" | "brand" | "warning" | "success"> = {
+  new: "info",
+  qualified: "brand",
+  connected: "brand",
+  attempted: "warning",
+  won: "success",
 };
 
 interface ContactRow {
@@ -239,7 +254,7 @@ export function ContactsTable({
 
   return (
     <div>
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
           placeholder="Search by name, email, or job title..."
           value={search}
@@ -270,13 +285,8 @@ export function ContactsTable({
             </option>
           ))}
         </Select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(e) => setOnlyMine(e.target.checked)}
-            className="size-4"
-          />
+        <label className="flex items-center gap-2 text-sm text-text-2">
+          <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine
         </label>
         <SavedViewsMenu
@@ -288,21 +298,21 @@ export function ContactsTable({
           onApply={applyFilters}
         />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
-          Export CSV
+          <Download /> Export CSV
         </Button>
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2">
-          <span className="text-sm text-foreground">{selected.size} selected</span>
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-soft px-4 py-2">
+          <span className="text-sm font-medium text-primary">{selected.size} selected</span>
           <Button
             type="button"
-            variant="outline"
+            variant="soft"
             size="sm"
             onClick={() => setBulkTagOpen(true)}
             disabled={tags.length === 0}
           >
-            Add tag
+            <TagIcon /> Add tag
           </Button>
           <Button
             type="button"
@@ -310,7 +320,7 @@ export function ContactsTable({
             size="sm"
             onClick={() => setConfirmBulkDelete(true)}
           >
-            Delete selected
+            <Trash2 /> Delete selected
           </Button>
           <Button
             type="button"
@@ -368,121 +378,97 @@ export function ContactsTable({
       </Dialog>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {contacts.length === 0
-              ? "No contacts yet. Create your first one to get started."
-              : "No contacts match your search."}
-          </p>
-        </div>
+        <EmptyState
+          title={contacts.length === 0 ? "No contacts yet" : "No contacts match your search"}
+          description={
+            contacts.length === 0 ? "Create your first one to get started." : undefined
+          }
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="w-10 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="size-4"
-                    aria-label="Select all"
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+              <TableHead>
+                <button type="button" onClick={() => toggleSort("name")} className="hover:text-foreground">
+                  Name{sortIndicator("name")}
+                </button>
+              </TableHead>
+              <TableHead>Company</TableHead>
+              <TableHead>
+                <button type="button" onClick={() => toggleSort("email")} className="hover:text-foreground">
+                  Email{sortIndicator("email")}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => toggleSort("job_title")}
+                  className="hover:text-foreground"
+                >
+                  Job title{sortIndicator("job_title")}
+                </button>
+              </TableHead>
+              <TableHead>
+                <button
+                  type="button"
+                  onClick={() => toggleSort("status")}
+                  className="hover:text-foreground"
+                >
+                  Status{sortIndicator("status")}
+                </button>
+              </TableHead>
+              <TableHead>Tags</TableHead>
+              <TableHead>Owner</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sorted.map((contact) => (
+              <TableRow key={contact.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selected.has(contact.id)}
+                    onCheckedChange={() => toggleOne(contact.id)}
+                    aria-label={`Select ${contact.name}`}
                   />
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("name")}
-                    className="hover:text-foreground"
-                  >
-                    Name{sortIndicator("name")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-medium">Company</th>
-                <th className="px-4 py-3 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("email")}
-                    className="hover:text-foreground"
-                  >
-                    Email{sortIndicator("email")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("job_title")}
-                    className="hover:text-foreground"
-                  >
-                    Job title{sortIndicator("job_title")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-medium">
-                  <button
-                    type="button"
-                    onClick={() => toggleSort("status")}
-                    className="hover:text-foreground"
-                  >
-                    Status{sortIndicator("status")}
-                  </button>
-                </th>
-                <th className="px-4 py-3 font-medium">Tags</th>
-                <th className="px-4 py-3 font-medium">Owner</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((contact) => (
-                <tr key={contact.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(contact.id)}
-                      onChange={() => toggleOne(contact.id)}
-                      className="size-4"
-                      aria-label={`Select ${contact.name}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    <Link href={`/contacts/${contact.id}`} className="hover:underline">
-                      {contact.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {contact.company_id
-                      ? (companyNameById[contact.company_id] ?? "—")
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {contact.email ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {contact.job_title ?? "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
-                      {STATUS_LABELS[contact.status] ?? contact.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {(tagsByContactId[contact.id] ?? []).map((tag) => (
-                        <span
-                          key={tag.id}
-                          className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground"
-                        >
-                          {tag.name}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </TableCell>
+                <TableCell className="font-medium text-foreground">
+                  <Link href={`/contacts/${contact.id}`} className="hover:underline">
+                    {contact.name}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {contact.company_id ? (companyNameById[contact.company_id] ?? "—") : "—"}
+                </TableCell>
+                <TableCell>{contact.email ?? "—"}</TableCell>
+                <TableCell>{contact.job_title ?? "—"}</TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_VARIANT[contact.status] ?? "neutral"}>
+                    {STATUS_LABELS[contact.status] ?? contact.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {(tagsByContactId[contact.id] ?? []).map((tag) => (
+                      <Badge key={tag.id} variant="neutral">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

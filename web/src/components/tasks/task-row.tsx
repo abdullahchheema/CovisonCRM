@@ -4,10 +4,18 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
 
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { TaskEditDialog } from "@/components/tasks/task-edit-dialog";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
+
+const PRIORITY_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+};
 
 interface TaskRowProps {
   task: {
@@ -52,22 +60,18 @@ export function TaskRow({
   };
 
   return (
-    <li className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3">
+    <li className="flex items-center justify-between gap-4 rounded-xl bg-surface px-4 py-3 shadow-xs">
       <div className="flex items-center gap-3">
         {onToggleSelect && (
-          <input
-            type="checkbox"
+          <Checkbox
             checked={selected ?? false}
-            onChange={onToggleSelect}
-            className="size-4"
+            onCheckedChange={onToggleSelect}
             aria-label={`Select ${task.title}`}
           />
         )}
-        <input
-          type="checkbox"
+        <Checkbox
           checked={isDone}
-          onChange={toggleComplete}
-          className="size-4"
+          onCheckedChange={toggleComplete}
           aria-label={isDone ? "Mark incomplete" : "Mark complete"}
         />
         <div>
@@ -75,14 +79,16 @@ export function TaskRow({
             href={`/tasks/${task.id}`}
             className={cn(
               "text-sm text-foreground hover:underline",
-              isDone && "text-muted-foreground line-through",
+              isDone && "text-text-3 line-through",
             )}
           >
             {task.title}
           </Link>
-          <div className="flex gap-2 text-xs text-muted-foreground">
+          <div className="mt-0.5 flex items-center gap-2 text-xs text-text-3">
             {task.due_at && <span>Due {new Date(task.due_at).toLocaleDateString()}</span>}
-            {task.priority && <span className="capitalize">{task.priority}</span>}
+            {task.priority && (
+              <Badge variant={PRIORITY_VARIANT[task.priority] ?? "neutral"}>{task.priority}</Badge>
+            )}
             {contactName && task.contact_id && (
               <Link href={`/contacts/${task.contact_id}`} className="hover:underline">
                 {contactName}

@@ -4,8 +4,11 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Download, Trash2 } from "lucide-react";
 
+import { Badge, type BadgeProps } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -14,8 +17,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { createClient } from "@/lib/supabase/client";
 import {
@@ -30,6 +35,21 @@ import {
 function toCsvValue(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
+
+const PRIORITY_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  critical: "danger",
+};
+
+const STATUS_VARIANT: Record<string, NonNullable<BadgeProps["variant"]>> = {
+  open: "info",
+  inProgress: "brand",
+  onHold: "warning",
+  resolved: "success",
+  closed: "neutral",
+};
 
 interface TicketRow {
   id: string;
@@ -159,7 +179,7 @@ export function TicketsTable({
 
   return (
     <div>
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Input
           placeholder="Search by title..."
           value={search}
@@ -198,13 +218,8 @@ export function TicketsTable({
             </option>
           ))}
         </Select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(e) => setOnlyMine(e.target.checked)}
-            className="size-4"
-          />
+        <label className="flex items-center gap-2 text-sm text-text-2">
+          <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine
         </label>
         <SavedViewsMenu
@@ -216,20 +231,20 @@ export function TicketsTable({
           onApply={applyFilters}
         />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
-          Export CSV
+          <Download /> Export CSV
         </Button>
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2">
-          <span className="text-sm text-foreground">{selected.size} selected</span>
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-soft px-4 py-2">
+          <span className="text-sm font-medium text-primary">{selected.size} selected</span>
           <Button
             type="button"
             variant="destructive"
             size="sm"
             onClick={() => setConfirmBulkDelete(true)}
           >
-            Delete selected
+            <Trash2 /> Delete selected
           </Button>
           <Button
             type="button"
@@ -263,76 +278,65 @@ export function TicketsTable({
       </Dialog>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {tickets.length === 0
-              ? "No tickets yet. Create one to get started."
-              : "No tickets match your filters."}
-          </p>
-        </div>
+        <EmptyState
+          title={tickets.length === 0 ? "No tickets yet" : "No tickets match your filters"}
+          description={tickets.length === 0 ? "Create one to get started." : undefined}
+        />
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border text-left text-muted-foreground">
-                <th className="w-10 px-4 py-3">
-                  <input
-                    type="checkbox"
-                    checked={allVisibleSelected}
-                    onChange={toggleAll}
-                    className="size-4"
-                    aria-label="Select all"
+        <Table>
+          <TableHeader>
+            <TableRow className="hover:bg-transparent">
+              <TableHead className="w-10">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={toggleAll}
+                  aria-label="Select all"
+                />
+              </TableHead>
+              <TableHead>Title</TableHead>
+              <TableHead>Contact</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Priority</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Assigned to</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((ticket) => (
+              <TableRow key={ticket.id}>
+                <TableCell>
+                  <Checkbox
+                    checked={selected.has(ticket.id)}
+                    onCheckedChange={() => toggleOne(ticket.id)}
+                    aria-label={`Select ${ticket.title}`}
                   />
-                </th>
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Contact</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Priority</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Assigned to</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((ticket) => (
-                <tr key={ticket.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={selected.has(ticket.id)}
-                      onChange={() => toggleOne(ticket.id)}
-                      className="size-4"
-                      aria-label={`Select ${ticket.title}`}
-                    />
-                  </td>
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    <Link href={`/tickets/${ticket.id}`} className="hover:underline">
-                      {ticket.title}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {ticket.contact_id ? (contactNameById[ticket.contact_id] ?? "—") : "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {CATEGORY_LABELS[ticket.category] ?? ticket.category}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
-                      {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-foreground">
-                      {STATUS_LABELS[ticket.status] ?? ticket.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    {ticket.assigned_to ? (memberNameById[ticket.assigned_to] ?? "—") : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                </TableCell>
+                <TableCell className="font-medium text-foreground">
+                  <Link href={`/tickets/${ticket.id}`} className="hover:underline">
+                    {ticket.title}
+                  </Link>
+                </TableCell>
+                <TableCell>
+                  {ticket.contact_id ? (contactNameById[ticket.contact_id] ?? "—") : "—"}
+                </TableCell>
+                <TableCell>{CATEGORY_LABELS[ticket.category] ?? ticket.category}</TableCell>
+                <TableCell>
+                  <Badge variant={PRIORITY_VARIANT[ticket.priority] ?? "neutral"}>
+                    {PRIORITY_LABELS[ticket.priority] ?? ticket.priority}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={STATUS_VARIANT[ticket.status] ?? "neutral"}>
+                    {STATUS_LABELS[ticket.status] ?? ticket.status}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  {ticket.assigned_to ? (memberNameById[ticket.assigned_to] ?? "—") : "—"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
       )}
     </div>
   );

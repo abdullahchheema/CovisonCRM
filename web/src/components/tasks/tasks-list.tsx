@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
+import { Download, Trash2 } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -13,6 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { EmptyState } from "@/components/ui/empty-state";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
@@ -151,13 +155,8 @@ export function TasksList({
           <option value="medium">Medium</option>
           <option value="high">High</option>
         </Select>
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
-          <input
-            type="checkbox"
-            checked={onlyMine}
-            onChange={(e) => setOnlyMine(e.target.checked)}
-            className="size-4"
-          />
+        <label className="flex items-center gap-2 text-sm text-text-2">
+          <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine
         </label>
         <SavedViewsMenu
@@ -169,20 +168,20 @@ export function TasksList({
           onApply={applyFilters}
         />
         <Button type="button" variant="outline" onClick={exportCsv} className="ml-auto">
-          Export CSV
+          <Download /> Export CSV
         </Button>
       </div>
 
       {selected.size > 0 && (
-        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2">
-          <span className="text-sm text-foreground">{selected.size} selected</span>
+        <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-soft px-4 py-2">
+          <span className="text-sm font-medium text-primary">{selected.size} selected</span>
           <Button
             type="button"
             variant="destructive"
             size="sm"
             onClick={() => setConfirmBulkDelete(true)}
           >
-            Delete selected
+            <Trash2 /> Delete selected
           </Button>
           <Button
             type="button"
@@ -216,11 +215,10 @@ export function TasksList({
       </Dialog>
 
       {filtered.length === 0 ? (
-        <div className="rounded-xl border border-border bg-surface p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            {tasks.length === 0 ? "No tasks yet. Create one to get started." : "No tasks match your filters."}
-          </p>
-        </div>
+        <EmptyState
+          title={tasks.length === 0 ? "No tasks yet" : "No tasks match your filters"}
+          description={tasks.length === 0 ? "Create one to get started." : undefined}
+        />
       ) : (
         <>
           {open.length > 0 && (
