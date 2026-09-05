@@ -20,9 +20,17 @@ interface TaskRowProps {
   };
   contacts: { id: string; name: string }[];
   contactName: string | null;
+  selected?: boolean;
+  onToggleSelect?: () => void;
 }
 
-export function TaskRow({ task, contacts, contactName }: TaskRowProps) {
+export function TaskRow({
+  task,
+  contacts,
+  contactName,
+  selected,
+  onToggleSelect,
+}: TaskRowProps) {
   const router = useRouter();
   const isDone = task.status === "completed";
 
@@ -46,11 +54,21 @@ export function TaskRow({ task, contacts, contactName }: TaskRowProps) {
   return (
     <li className="flex items-center justify-between gap-4 rounded-xl border border-border bg-surface px-4 py-3">
       <div className="flex items-center gap-3">
+        {onToggleSelect && (
+          <input
+            type="checkbox"
+            checked={selected ?? false}
+            onChange={onToggleSelect}
+            className="size-4"
+            aria-label={`Select ${task.title}`}
+          />
+        )}
         <input
           type="checkbox"
           checked={isDone}
           onChange={toggleComplete}
           className="size-4"
+          aria-label={isDone ? "Mark incomplete" : "Mark complete"}
         />
         <div>
           <Link

@@ -1,12 +1,23 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { TaskRow } from "@/components/tasks/task-row";
+import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
   return /[",\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
@@ -41,9 +52,13 @@ export function TasksList({
   organizationId,
   savedViews,
 }: TasksListProps) {
+  const router = useRouter();
   const [search, setSearch] = useState("");
   const [priority, setPriority] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -65,6 +80,39 @@ export function TasksList({
 
   const open = filtered.filter((t) => t.status !== "completed");
   const completed = filtered.filter((t) => t.status === "completed");
+
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const bulkDelete = async () => {
+    setIsBulkDeleting(true);
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("tasks")
+      .update({ deleted_at: new Date().toISOString() })
+      .in("id", Array.from(selected));
+
+    setIsBulkDeleting(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    toast.success(`${selected.size} task${selected.size === 1 ? "" : "s"} deleted`);
+    setSelected(new Set());
+    setConfirmBulkDelete(false);
+    router.refresh();
+  };
 
   const exportCsv = () => {
     const header = ["Title", "Status", "Priority", "Due date", "Contact", "Assigned to"];
@@ -125,6 +173,48 @@ export function TasksList({
         </Button>
       </div>
 
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2">
+          <span className="text-sm text-foreground">{selected.size} selected</span>
+          <Button
+            type="button"
+            variant="destructive"
+            size="sm"
+            onClick={() => setConfirmBulkDelete(true)}
+          >
+            Delete selected
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => setSelected(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={confirmBulkDelete} onOpenChange={setConfirmBulkDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selected.size} tasks?</DialogTitle>
+            <DialogDescription>
+              This removes them from your list. This can&apos;t be undone from
+              the app yet.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmBulkDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={bulkDelete} disabled={isBulkDeleting}>
+              {isBulkDeleting ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {filtered.length === 0 ? (
         <div className="rounded-xl border border-border bg-surface p-8 text-center">
           <p className="text-sm text-muted-foreground">
@@ -141,6 +231,8 @@ export function TasksList({
                   task={task}
                   contacts={contacts}
                   contactName={task.contact_id ? (contactNameById[task.contact_id] ?? null) : null}
+                  selected={selected.has(task.id)}
+                  onToggleSelect={() => toggleOne(task.id)}
                 />
               ))}
             </ul>
@@ -156,6 +248,8 @@ export function TasksList({
                     task={task}
                     contacts={contacts}
                     contactName={task.contact_id ? (contactNameById[task.contact_id] ?? null) : null}
+                    selected={selected.has(task.id)}
+                    onToggleSelect={() => toggleOne(task.id)}
                   />
                 ))}
               </ul>
