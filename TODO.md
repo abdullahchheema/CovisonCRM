@@ -20,17 +20,14 @@ deleting them, so history of what shipped stays visible.
 
 ## In progress / next up
 
-Saved views are now on all four list pages that have client-side filter
-state (contacts, companies, tickets, tasks) — nothing queued here right
-now. Candidates for the next pass, roughly in order of value:
-
-- [ ] CSV export for tickets and tasks (contacts/companies have it).
-- [ ] Bulk delete/bulk-status-change on tickets and tasks (contacts/
-      companies have bulk delete + bulk tag-add).
+- [ ] Bulk delete on tasks — its rows are a card list (TaskRow), not a
+      checkbox-table like contacts/companies/tickets, so this needs a
+      small layout change first rather than being prop-plumbing.
 - [ ] CSV import for companies (contacts is the only entity with import
       so far).
 - [ ] Search/filter on the pipeline board (deals) — currently only has
-      the "only mine" toggle, no text search.
+      the "only mine" toggle, no text search, no CSV export, no saved
+      views.
 
 ## Deferred — needs an external account or a bigger schema decision
 
@@ -44,6 +41,8 @@ now. Candidates for the next pass, roughly in order of value:
 
 ## Done (recent)
 
+- [x] CSV export on tickets and tasks; bulk delete + select-all on
+      tickets (matches contacts/companies).
 - [x] Saved views + client-side search/priority filters on tasks
       (replaces the old server-driven `?mine=1`-only page).
 - [x] Saved views extended to companies and tickets (contacts was first).
