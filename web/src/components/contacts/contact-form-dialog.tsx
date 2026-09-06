@@ -19,6 +19,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
+import {
+  CustomFieldsSection,
+  findMissingRequiredField,
+  type LeadTypeOption,
+} from "@/components/lead-types/custom-fields-section";
 import { createClient } from "@/lib/supabase/client";
 
 const STATUS_OPTIONS = [
@@ -61,14 +66,18 @@ interface ContactFormDialogProps {
   organizationId: string;
   companies: { id: string; name: string }[];
   members: { id: string; name: string }[];
+  leadTypes: LeadTypeOption[];
 }
 
 export function ContactFormDialog({
   organizationId,
   companies,
   members,
+  leadTypes,
 }: ContactFormDialogProps) {
   const [open, setOpen] = useState(false);
+  const [leadTypeId, setLeadTypeId] = useState("");
+  const [customFields, setCustomFields] = useState<Record<string, unknown>>({});
   const router = useRouter();
   const {
     register,
@@ -81,9 +90,20 @@ export function ContactFormDialog({
   });
 
   const onSubmit = async (values: ContactFormValues) => {
+    const missing = findMissingRequiredField(
+      leadTypes.find((t) => t.id === leadTypeId),
+      customFields,
+    );
+    if (missing) {
+      toast.error(`${missing} is required for this lead type.`);
+      return;
+    }
+
     const supabase = createClient();
     const { error } = await supabase.from("contacts").insert({
       organization_id: organizationId,
+      lead_type_id: leadTypeId || null,
+      custom_fields: customFields,
       name: values.name,
       email: values.email || null,
       phone: values.phone || null,
@@ -109,6 +129,8 @@ export function ContactFormDialog({
 
     toast.success("Contact created");
     reset();
+    setLeadTypeId("");
+    setCustomFields({});
     setOpen(false);
     router.refresh();
   };
@@ -241,6 +263,14 @@ export function ContactFormDialog({
               </div>
             </div>
           </div>
+
+          <CustomFieldsSection
+            leadTypes={leadTypes}
+            leadTypeId={leadTypeId}
+            onLeadTypeChange={setLeadTypeId}
+            values={customFields}
+            onValuesChange={setCustomFields}
+          />
 
           <DialogFooter>
             <Button type="submit" disabled={isSubmitting}>

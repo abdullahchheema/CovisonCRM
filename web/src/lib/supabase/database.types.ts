@@ -222,6 +222,8 @@ export type Database = {
           country: string | null;
           city: string | null;
           niche: string | null;
+          lead_type_id: string | null;
+          custom_fields: Record<string, unknown>;
           last_activity_at: string | null;
           created_by: string | null;
           created_at: string;
@@ -247,6 +249,8 @@ export type Database = {
           country?: string | null;
           city?: string | null;
           niche?: string | null;
+          lead_type_id?: string | null;
+          custom_fields?: Record<string, unknown>;
           last_activity_at?: string | null;
           created_by?: string | null;
           created_at?: string;
@@ -272,7 +276,50 @@ export type Database = {
           country?: string | null;
           city?: string | null;
           niche?: string | null;
+          lead_type_id?: string | null;
+          custom_fields?: Record<string, unknown>;
           last_activity_at?: string | null;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      lead_types: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          // Field definitions — validated in app code (see lib/lead-types.ts),
+          // not by the database, so this stays deliberately loose here.
+          fields: Record<string, unknown>[];
+          position: number;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          fields?: Record<string, unknown>[];
+          position?: number;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          description?: string | null;
+          fields?: Record<string, unknown>[];
+          position?: number;
           created_by?: string | null;
           created_at?: string;
           updated_at?: string;

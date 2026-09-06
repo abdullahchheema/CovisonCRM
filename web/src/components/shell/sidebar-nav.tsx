@@ -7,6 +7,7 @@ import {
   Users,
   Building2,
   KanbanSquare,
+  Layers,
   ListTodo,
   LifeBuoy,
   FolderKanban,
@@ -42,6 +43,7 @@ const NAV_GROUPS: NavGroup[] = [
       { href: "/contacts", label: "Contacts", icon: Users },
       { href: "/companies", label: "Companies", icon: Building2 },
       { href: "/pipeline", label: "Pipeline", icon: KanbanSquare },
+      { href: "/lead-types", label: "Lead types", icon: Layers },
     ],
   },
   {

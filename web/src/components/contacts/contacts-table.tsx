@@ -79,6 +79,7 @@ interface ContactRow {
   niche: string | null;
   expected_revenue: number | null;
   expected_close: string | null;
+  lead_type_id: string | null;
 }
 
 // Every optional column the table can show, beyond the fixed Name column.
@@ -88,6 +89,7 @@ const DEFAULT_COLUMN_KEYS = ["company", "email", "job_title", "status", "tags", 
 
 const ALL_COLUMNS: ColumnDef[] = [
   { key: "company", label: "Company" },
+  { key: "lead_type", label: "Lead type" },
   { key: "email", label: "Email" },
   { key: "phone", label: "Phone" },
   { key: "job_title", label: "Job title" },
@@ -128,6 +130,8 @@ interface ContactsTableProps {
   tagsByContactId: Record<string, Tag[]>;
   savedViews: SavedView[];
   emailTemplates: EmailTemplateOption[];
+  leadTypes: { id: string; name: string }[];
+  leadTypeNameById: Record<string, string>;
 }
 
 export function ContactsTable({
@@ -140,11 +144,14 @@ export function ContactsTable({
   tagsByContactId,
   savedViews,
   emailTemplates,
+  leadTypes,
+  leadTypeNameById,
 }: ContactsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [tagFilter, setTagFilter] = useState("");
+  const [leadTypeFilter, setLeadTypeFilter] = useState("");
   const [onlyMine, setOnlyMine] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
@@ -160,6 +167,7 @@ export function ContactsTable({
     return contacts.filter((contact) => {
       if (onlyMine && contact.owner_id !== currentUserId) return false;
       if (status && contact.status !== status) return false;
+      if (leadTypeFilter && contact.lead_type_id !== leadTypeFilter) return false;
       if (tagFilter && !(tagsByContactId[contact.id] ?? []).some((tag) => tag.id === tagFilter)) {
         return false;
       }
@@ -170,7 +178,7 @@ export function ContactsTable({
         (contact.job_title ?? "").toLowerCase().includes(term)
       );
     });
-  }, [contacts, search, status, tagFilter, tagsByContactId, onlyMine, currentUserId]);
+  }, [contacts, search, status, tagFilter, leadTypeFilter, tagsByContactId, onlyMine, currentUserId]);
 
   const sorted = useMemo(() => {
     if (!sort) return filtered;
@@ -271,6 +279,7 @@ export function ContactsTable({
     search,
     status,
     tagFilter,
+    leadTypeFilter,
     onlyMine,
     sort,
     columns: visibleColumns,
@@ -280,6 +289,7 @@ export function ContactsTable({
     if (typeof filters.search === "string") setSearch(filters.search);
     if (typeof filters.status === "string") setStatus(filters.status);
     if (typeof filters.tagFilter === "string") setTagFilter(filters.tagFilter);
+    if (typeof filters.leadTypeFilter === "string") setLeadTypeFilter(filters.leadTypeFilter);
     if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
     const loadedSort = filters.sort as { key: SortKey; dir: "asc" | "desc" } | null | undefined;
     setSort(loadedSort ?? null);
@@ -347,6 +357,12 @@ export function ContactsTable({
     switch (key) {
       case "company":
         return contact.company_id ? (companyNameById[contact.company_id] ?? "—") : "—";
+      case "lead_type":
+        return contact.lead_type_id ? (
+          <Badge variant="brand">{leadTypeNameById[contact.lead_type_id] ?? "Unknown"}</Badge>
+        ) : (
+          "—"
+        );
       case "email":
         return contact.email ?? "—";
       case "phone":
@@ -459,6 +475,21 @@ export function ContactsTable({
             </option>
           ))}
         </Select>
+        {leadTypes.length > 0 && (
+          <Select
+            value={leadTypeFilter}
+            onChange={(e) => setLeadTypeFilter(e.target.value)}
+            className="max-w-40"
+            aria-label="Filter by lead type"
+          >
+            <option value="">All lead types</option>
+            {leadTypes.map((leadType) => (
+              <option key={leadType.id} value={leadType.id}>
+                {leadType.name}
+              </option>
+            ))}
+          </Select>
+        )}
         <label className="flex items-center gap-2 text-sm text-text-2">
           <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine

@@ -4,6 +4,7 @@ import { ContactsImportDialog } from "@/components/contacts/contacts-import-dial
 import { ContactsTable } from "@/components/contacts/contacts-table";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
 import { PageHeader } from "@/components/ui/page-header";
+import { parseLeadTypeFields } from "@/lib/lead-types";
 
 export default async function ContactsPage() {
   const { supabase, org, profile } = await requireOrgContext();
@@ -15,11 +16,12 @@ export default async function ContactsPage() {
     { data: tags },
     { data: savedViews },
     { data: emailTemplates },
+    { data: leadTypeRows },
   ] = await Promise.all([
       supabase
         .from("contacts")
         .select(
-          "id, name, email, phone, job_title, status, priority, company_id, owner_id, linkedin_url, website, country, city, niche, expected_revenue, expected_close, created_at",
+          "id, name, email, phone, job_title, status, priority, company_id, owner_id, linkedin_url, website, country, city, niche, expected_revenue, expected_close, lead_type_id, created_at",
         )
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
@@ -44,7 +46,20 @@ export default async function ContactsPage() {
         .select("id, name, subject")
         .is("deleted_at", null)
         .order("name"),
+      supabase
+        .from("lead_types")
+        .select("id, name, fields")
+        .is("deleted_at", null)
+        .order("position")
+        .order("name"),
     ]);
+
+  const leadTypes = (leadTypeRows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    fields: parseLeadTypeFields(row.fields),
+  }));
+  const leadTypeNameById = Object.fromEntries(leadTypes.map((t) => [t.id, t.name]));
 
   const companyNameById = Object.fromEntries(
     (companies ?? []).map((company) => [company.id, company.name]),
@@ -75,7 +90,12 @@ export default async function ContactsPage() {
         actions={
           <>
             <ContactsImportDialog organizationId={org.id} existingCompanies={companies ?? []} />
-            <ContactFormDialog organizationId={org.id} companies={companies ?? []} members={members} />
+            <ContactFormDialog
+              organizationId={org.id}
+              companies={companies ?? []}
+              members={members}
+              leadTypes={leadTypes}
+            />
           </>
         }
       />
@@ -93,6 +113,8 @@ export default async function ContactsPage() {
           tagsByContactId={tagsByContactId}
           savedViews={savedViews ?? []}
           emailTemplates={emailTemplates ?? []}
+          leadTypes={leadTypes}
+          leadTypeNameById={leadTypeNameById}
         />
       )}
     </div>

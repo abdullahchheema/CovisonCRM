@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+import { parseLeadTypeFields, readCustomValue } from "@/lib/lead-types";
 import { Mail } from "lucide-react";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -48,6 +49,7 @@ export default async function ContactDetailPage({
     { data: activityRows },
     members,
     { data: emailTemplates },
+    { data: leadTypeRows },
   ] = await Promise.all([
     supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
     supabase.from("tags").select("id, name, color").is("deleted_at", null).order("name"),
@@ -64,7 +66,23 @@ export default async function ContactDetailPage({
       .select("id, name, subject")
       .is("deleted_at", null)
       .order("name"),
+    supabase
+      .from("lead_types")
+      .select("id, name, fields")
+      .is("deleted_at", null)
+      .order("position")
+      .order("name"),
   ]);
+
+  const leadTypes = (leadTypeRows ?? []).map((row) => ({
+    id: row.id,
+    name: row.name,
+    fields: parseLeadTypeFields(row.fields),
+  }));
+  const contactLeadType = contact.lead_type_id
+    ? leadTypes.find((t) => t.id === contact.lead_type_id)
+    : undefined;
+  const contactCustomFields = (contact.custom_fields as Record<string, unknown> | null) ?? {};
 
   const actorIds = [
     ...new Set((activityRows ?? []).map((a) => a.actor_id).filter((v): v is string => !!v)),
@@ -103,7 +121,12 @@ export default async function ContactDetailPage({
                 </Button>
               }
             />
-            <ContactEditDialog contact={contact} companies={companies ?? []} members={members} />
+            <ContactEditDialog
+              contact={contact}
+              companies={companies ?? []}
+              members={members}
+              leadTypes={leadTypes}
+            />
             <SoftDeleteButton
               table="contacts"
               id={contact.id}
@@ -143,6 +166,7 @@ export default async function ContactDetailPage({
               <Field label="Phone" value={contact.phone ?? "—"} />
               <Field label="Job title" value={contact.job_title ?? "—"} />
               <Field label="Status" value={<span className="capitalize">{contact.status}</span>} />
+              <Field label="Lead type" value={contactLeadType?.name ?? "—"} />
               <Field label="Owner" value={ownerName ?? "Unassigned"} />
               <Field label="Priority" value={<span className="capitalize">{contact.priority ?? "—"}</span>} />
               <Field
@@ -176,6 +200,26 @@ export default async function ContactDetailPage({
               />
             </dl>
           </div>
+
+          {contactLeadType && contactLeadType.fields.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-text-2">
+                  {contactLeadType.name} details
+                </h2>
+                <dl className="flex flex-col gap-2">
+                  {contactLeadType.fields.map((field) => (
+                    <Field
+                      key={field.key}
+                      label={field.label}
+                      value={readCustomValue(contactCustomFields, field) || "—"}
+                    />
+                  ))}
+                </dl>
+              </div>
+            </>
+          )}
 
           <Separator />
 
