@@ -8,7 +8,20 @@ const hasEnvVars = Boolean(
 
 // Routes that don't require a signed-in user. Everything under /dashboard
 // and /onboarding is the authenticated app; adjust as real route groups land.
-const PUBLIC_PATH_PREFIXES = ["/auth"];
+// /icon, /apple-icon, and /opengraph-image are the generated brand-asset
+// routes (next/og) added with the marketing site — they have no file
+// extension in their URL, so the matcher's static-asset exclusion below
+// doesn't skip them; they must be listed here explicitly or every browser
+// request for the favicon/OG image gets redirected to login instead of an
+// image, same as /privacy and /terms would without this entry.
+const PUBLIC_PATH_PREFIXES = [
+  "/auth",
+  "/privacy",
+  "/terms",
+  "/icon",
+  "/apple-icon",
+  "/opengraph-image",
+];
 
 function isPublicPath(pathname: string): boolean {
   return (

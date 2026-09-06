@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Reveal } from "@/components/marketing/reveal";
 
-export function FinalCta({ isSignedIn }: { isSignedIn: boolean }) {
+export function FinalCta() {
   return (
     <section className="mx-auto w-full max-w-3xl px-6 py-24 text-center">
       <Reveal>
@@ -15,9 +15,7 @@ export function FinalCta({ isSignedIn }: { isSignedIn: boolean }) {
         </p>
         <div className="mt-8">
           <Button asChild size="lg">
-            <Link href={isSignedIn ? "/dashboard" : "/auth/sign-up"}>
-              {isSignedIn ? "Open CRM" : "Get started"}
-            </Link>
+            <Link href="/auth/sign-up">Get started</Link>
           </Button>
         </div>
       </Reveal>

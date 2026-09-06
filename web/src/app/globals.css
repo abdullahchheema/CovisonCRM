@@ -228,8 +228,15 @@
 
   --radius-DEFAULT: var(--radius);
 
-  --font-sans: var(--font-inter-tight), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-instrument-serif), Georgia, "Times New Roman", serif;
+  /*
+   * One family for both roles — bold/professional/minimalist replaced the
+   * original serif+sans editorial pairing. --font-display kept as its own
+   * token (rather than deleted) so the ~40 existing `font-display`
+   * className sites across the app keep working unchanged; it just
+   * resolves to the same family as --font-sans now.
+   */
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
 
   /*
    * New typography scale, added as NEW --text-* keys (display/hero/h1/h2/h3/
@@ -238,20 +245,29 @@
    * `text-hero`, etc. classes. Existing keys (text-sm, text-xs, text-base,
    * text-xl, ...) are NOT touched, so all ~180 existing text-* sites in the
    * app are unaffected.
+   *
+   * font-weight added on the heading sizes (not body-lg/label/caption) —
+   * with the serif gone, "bold" has to come from actual weight, not a
+   * typeface's inherent character.
    */
   --text-display: 4.5rem;
   --text-display--line-height: 1.05;
   --text-display--letter-spacing: -0.02em;
+  --text-display--font-weight: 700;
   --text-hero: 3rem;
   --text-hero--line-height: 1.1;
   --text-hero--letter-spacing: -0.015em;
+  --text-hero--font-weight: 700;
   --text-h1: 2.25rem;
   --text-h1--line-height: 1.15;
   --text-h1--letter-spacing: -0.01em;
+  --text-h1--font-weight: 700;
   --text-h2: 1.75rem;
   --text-h2--line-height: 1.25;
+  --text-h2--font-weight: 600;
   --text-h3: 1.375rem;
   --text-h3--line-height: 1.35;
+  --text-h3--font-weight: 600;
   --text-body-lg: 1.125rem;
   --text-body-lg--line-height: 1.6;
   --text-label: 0.8125rem;
@@ -260,6 +276,7 @@
   --text-caption--line-height: 1.4;
   --text-metric: 2.5rem;
   --text-metric--line-height: 1.1;
+  --text-metric--font-weight: 700;
 }
 
 body {

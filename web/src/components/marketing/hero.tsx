@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProductPreview } from "@/components/marketing/product-preview";
 
-export function Hero({ isSignedIn }: { isSignedIn: boolean }) {
+export function Hero() {
   return (
     <section className="relative overflow-hidden">
       <div aria-hidden className="pointer-events-none absolute inset-0">
@@ -20,9 +20,7 @@ export function Hero({ isSignedIn }: { isSignedIn: boolean }) {
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button asChild size="lg">
-            <Link href={isSignedIn ? "/dashboard" : "/auth/sign-up"}>
-              {isSignedIn ? "Open CRM" : "Get started"}
-            </Link>
+            <Link href="/auth/sign-up">Get started</Link>
           </Button>
           <Button asChild size="lg" variant="outline">
             <a href="#how-it-works">See how it works</a>

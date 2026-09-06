@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Inter_Tight } from "next/font/google";
+import { Geist } from "next/font/google";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
-// UI sans — variable weight, used everywhere text-* utilities already are.
-const interTight = Inter_Tight({
-  variable: "--font-inter-tight",
+// One family for everything — headlines and body both — per the "bold,
+// professional, minimalist" direction: a single strong grotesque rather
+// than the serif+sans pairing this design started with. Variable weight
+// covers both the bold headline weights and regular body text from one
+// font file. --font-display and --font-sans both point at this same
+// variable in globals.css, so every existing `font-display`/`font-sans`
+// className site across the app repoints without being touched.
+const geist = Geist({
+  variable: "--font-geist",
   subsets: ["latin"],
   weight: "variable",
-  display: "swap",
-});
-
-// Display serif — headlines, hero numerals, marketing copy. Google only
-// ships this at weight 400; that's the intended editorial character, not a
-// missing config.
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: "400",
-  style: ["normal", "italic"],
+  style: ["normal"],
   display: "swap",
 });
 
@@ -42,7 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     // flash of the wrong theme), which would otherwise show as a mismatch.
     <html
       lang="en"
-      className={`${interTight.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`${geist.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

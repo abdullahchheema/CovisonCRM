@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/server";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Hero } from "@/components/marketing/hero";
 import { CapabilityStrip } from "@/components/marketing/capability-strip";
@@ -18,20 +17,17 @@ import { FinalCta } from "@/components/marketing/final-cta";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
 // Deliberately not gated by requireOrgContext() or any redirect — this
-// route renders identically (module the header's CTA label) whether the
-// visitor is signed in or not, and nothing else in the app links here, so
-// it's the one page safe to fully replace without touching auth or
-// routing. See the plan's Phase 9 note on why this file was chosen first.
-export default async function Home() {
-  const supabase = await createClient();
-  const { data: claimsData } = await supabase.auth.getClaims();
-  const isSignedIn = !!claimsData?.claims?.sub;
-
+// route renders identically for every visitor, signed in or not, and
+// nothing else in the app links here, so it's the one page safe to fully
+// replace without touching auth or routing. Login/Get started always show
+// in the header and CTAs regardless of auth state (no per-visitor branch),
+// which is also what keeps this page fully static.
+export default function Home() {
   return (
     <div className="flex min-h-svh flex-col bg-bg">
-      <SiteHeader isSignedIn={isSignedIn} />
+      <SiteHeader />
       <main className="flex-1">
-        <Hero isSignedIn={isSignedIn} />
+        <Hero />
         <CapabilityStrip />
 
         <FeatureStory
@@ -66,7 +62,7 @@ export default async function Home() {
         <Differentiation />
         <BrandSection />
         <Testimonial />
-        <FinalCta isSignedIn={isSignedIn} />
+        <FinalCta />
       </main>
       <SiteFooter />
     </div>
