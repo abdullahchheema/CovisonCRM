@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Download, Tag as TagIcon, Trash2 } from "lucide-react";
+import { Download, Mail, Tag as TagIcon, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,7 @@ import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
 import { ColumnsMenu, type ColumnDef } from "@/components/contacts/columns-menu";
+import { SendEmailDialog } from "@/components/emails/send-email-dialog";
 import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
@@ -111,6 +112,12 @@ interface Tag {
   color: string;
 }
 
+interface EmailTemplateOption {
+  id: string;
+  name: string;
+  subject: string;
+}
+
 interface ContactsTableProps {
   contacts: ContactRow[];
   companyNameById: Record<string, string>;
@@ -120,6 +127,7 @@ interface ContactsTableProps {
   tags: Tag[];
   tagsByContactId: Record<string, Tag[]>;
   savedViews: SavedView[];
+  emailTemplates: EmailTemplateOption[];
 }
 
 export function ContactsTable({
@@ -131,6 +139,7 @@ export function ContactsTable({
   tags,
   tagsByContactId,
   savedViews,
+  emailTemplates,
 }: ContactsTableProps) {
   const router = useRouter();
   const [search, setSearch] = useState("");
@@ -471,6 +480,18 @@ export function ContactsTable({
       {selected.size > 0 && (
         <div className="mb-4 flex items-center gap-3 rounded-xl bg-brand-soft px-4 py-2">
           <span className="text-sm font-medium text-primary">{selected.size} selected</span>
+          <SendEmailDialog
+            organizationId={organizationId}
+            templates={emailTemplates}
+            recipients={sorted
+              .filter((c) => selected.has(c.id))
+              .map((c) => ({ id: c.id, name: c.name }))}
+            trigger={
+              <Button type="button" variant="soft" size="sm">
+                <Mail /> Send email
+              </Button>
+            }
+          />
           <Button
             type="button"
             variant="soft"

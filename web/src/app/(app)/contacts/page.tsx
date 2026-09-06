@@ -8,8 +8,14 @@ import { PageHeader } from "@/components/ui/page-header";
 export default async function ContactsPage() {
   const { supabase, org, profile } = await requireOrgContext();
 
-  const [{ data: contacts, error }, { data: companies }, members, { data: tags }, { data: savedViews }] =
-    await Promise.all([
+  const [
+    { data: contacts, error },
+    { data: companies },
+    members,
+    { data: tags },
+    { data: savedViews },
+    { data: emailTemplates },
+  ] = await Promise.all([
       supabase
         .from("contacts")
         .select(
@@ -32,6 +38,11 @@ export default async function ContactsPage() {
         .from("saved_views")
         .select("id, name, filters, is_shared, user_id")
         .eq("entity_type", "contacts")
+        .order("name"),
+      supabase
+        .from("email_templates")
+        .select("id, name, subject")
+        .is("deleted_at", null)
         .order("name"),
     ]);
 
@@ -81,6 +92,7 @@ export default async function ContactsPage() {
           tags={tags ?? []}
           tagsByContactId={tagsByContactId}
           savedViews={savedViews ?? []}
+          emailTemplates={emailTemplates ?? []}
         />
       )}
     </div>

@@ -5,10 +5,13 @@ import { ContactTagManager } from "@/components/contacts/contact-tag-manager";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
 import { AddNoteForm } from "@/components/shared/add-note-form";
 import { ActivityTimeline } from "@/components/shared/activity-timeline";
+import { SendEmailDialog } from "@/components/emails/send-email-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { Separator } from "@/components/ui/separator";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+import { Mail } from "lucide-react";
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
   return (
@@ -44,6 +47,7 @@ export default async function ContactDetailPage({
     { data: assignedTagRows },
     { data: activityRows },
     members,
+    { data: emailTemplates },
   ] = await Promise.all([
     supabase.from("companies").select("id, name").is("deleted_at", null).order("name"),
     supabase.from("tags").select("id, name, color").is("deleted_at", null).order("name"),
@@ -55,6 +59,11 @@ export default async function ContactDetailPage({
       .is("deleted_at", null)
       .order("occurred_at", { ascending: false }),
     getOrgMemberOptions(supabase),
+    supabase
+      .from("email_templates")
+      .select("id, name, subject")
+      .is("deleted_at", null)
+      .order("name"),
   ]);
 
   const actorIds = [
@@ -84,6 +93,16 @@ export default async function ContactDetailPage({
         description={companyName}
         actions={
           <>
+            <SendEmailDialog
+              organizationId={org.id}
+              templates={emailTemplates ?? []}
+              recipients={[{ id: contact.id, name: contact.name }]}
+              trigger={
+                <Button variant="outline">
+                  <Mail /> Send email
+                </Button>
+              }
+            />
             <ContactEditDialog contact={contact} companies={companies ?? []} members={members} />
             <SoftDeleteButton
               table="contacts"
