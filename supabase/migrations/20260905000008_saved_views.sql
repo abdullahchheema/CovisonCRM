@@ -1,6 +1,6 @@
 -- Saved views: a named, persisted filter/sort combination for a list page.
 -- entity_type keys which page a view belongs to ('contacts' first; the UI
--- generalizes to companies/tickets/tasks without another migration — this
+-- generalizes to companies/tickets/tasks without another migration, this
 -- table doesn't need to know what "filters" means, it just stores and
 -- returns the JSON the page it belongs to wrote).
 create table public.saved_views (
@@ -17,7 +17,7 @@ create table public.saved_views (
 
 create unique index saved_views_owner_name_idx
   on public.saved_views (user_id, entity_type, lower(name));
--- Shared views need to be listed by any org member, not just the owner —
+-- Shared views need to be listed by any org member, not just the owner,
 -- a second, org-scoped lookup path alongside the owner index above.
 create index saved_views_org_shared_idx
   on public.saved_views (organization_id, entity_type) where is_shared;
@@ -43,7 +43,7 @@ create policy saved_views_insert on public.saved_views for insert to authenticat
     and organization_id = (select public.current_org_id())
   );
 
--- Only the owner can rename/re-save/(un)share or delete their own view —
+-- Only the owner can rename/re-save/(un)share or delete their own view,
 -- a shared view is read-only to everyone else, same as a shared filter
 -- link in any comparable product.
 create policy saved_views_update on public.saved_views for update to authenticated

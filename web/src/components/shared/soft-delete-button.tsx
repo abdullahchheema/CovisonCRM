@@ -34,7 +34,7 @@ interface SoftDeleteButtonProps {
   table: SoftDeletableTable;
   id: string;
   label: string;
-  /** Omit to stay on the current page (just refresh) — e.g. deleting a row
+  /** Omit to stay on the current page (just refresh), e.g. deleting a row
    * from a list rather than deleting the thing the current page is about. */
   redirectTo?: string;
 }
@@ -52,7 +52,7 @@ export function SoftDeleteButton({
   const handleDelete = async () => {
     setIsDeleting(true);
     const supabase = createClient();
-    // Soft delete — deleted_at, never a hard DELETE — so activity history
+    // Soft delete, deleted_at, never a hard DELETE, so activity history
     // and any references stay intact rather than cascading destructively.
     const { error } = await supabase
       .from(table)

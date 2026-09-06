@@ -25,7 +25,7 @@ export async function createClient() {
             );
           } catch {
             // setAll was called from a Server Component, which can't write
-            // cookies directly. Safe to ignore — proxy.ts refreshes the
+            // cookies directly. Safe to ignore, proxy.ts refreshes the
             // session on every request, so the write isn't lost, just
             // deferred to the next request that can actually set it.
           }

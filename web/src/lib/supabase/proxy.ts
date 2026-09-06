@@ -9,7 +9,7 @@ const hasEnvVars = Boolean(
 // Routes that don't require a signed-in user. Everything under /dashboard
 // and /onboarding is the authenticated app; adjust as real route groups land.
 // /icon, /apple-icon, and /opengraph-image are the generated brand-asset
-// routes (next/og) added with the marketing site — they have no file
+// routes (next/og) added with the marketing site, they have no file
 // extension in their URL, so the matcher's static-asset exclusion below
 // doesn't skip them; they must be listed here explicitly or every browser
 // request for the favicon/OG image gets redirected to login instead of an
@@ -33,10 +33,10 @@ function isPublicPath(pathname: string): boolean {
 /**
  * Refreshes the Supabase session on every navigation and redirects signed-out
  * users away from protected routes. Called from the root proxy.ts (Next.js
- * 16 renamed middleware.ts to proxy.ts — see AGENTS.md).
+ * 16 renamed middleware.ts to proxy.ts; see AGENTS.md).
  *
  * Do not add code between createServerClient and supabase.auth.getClaims()
- * below — a stray early return here is exactly the kind of bug that makes
+ * below. A stray early return here is exactly the kind of bug that makes
  * users get randomly logged out, because the refreshed cookies never make it
  * onto the response.
  */
@@ -89,7 +89,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Must return supabaseResponse as-is (or a response built from it) — see
+  // Must return supabaseResponse as-is (or a response built from it); see
   // the cookie-sync warning in the setAll callback above.
   return supabaseResponse;
 }

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CovisonMark } from "@/components/brand/covison-mark";
 
 // The bespoke half of the login page's split composition (the plan's only
-// auth page that gets one — the other 5 share the plainer AuthShell).
+// auth page that gets one. The other 5 share the plainer AuthShell).
 // Composed entirely from tokens and CSS, per the "build the hero in
 // HTML/CSS, not an image" decision: no screenshot of the real app is
 // possible here anyway (this renders while signed out), and a hand-drawn

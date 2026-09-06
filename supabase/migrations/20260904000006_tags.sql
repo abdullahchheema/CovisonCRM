@@ -12,7 +12,7 @@ create unique index tags_org_name_idx on public.tags (organization_id, name) whe
 
 -- Many-to-many join. organization_id is denormalized onto this row (rather
 -- than derived via a join to contacts/tags) so RLS on this table is a plain
--- indexed equality check instead of a correlated EXISTS subquery — the
+-- indexed equality check instead of a correlated EXISTS subquery, the
 -- difference between an index scan and a per-row filter on every read.
 create table public.contact_tags (
   contact_id       uuid not null,

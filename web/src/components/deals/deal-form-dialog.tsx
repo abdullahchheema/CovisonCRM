@@ -31,7 +31,7 @@ const dealSchema = z.object({
 });
 
 // z.coerce.number() makes the schema's input type (string, from the <input>)
-// differ from its output type (number, after coercion) — useForm needs both
+// differ from its output type (number, after coercion), useForm needs both
 // sides named explicitly, or TS can't reconcile register()'s raw string
 // values with onSubmit's coerced ones.
 type DealFormInput = z.input<typeof dealSchema>;

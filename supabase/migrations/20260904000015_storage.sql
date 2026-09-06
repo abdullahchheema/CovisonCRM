@@ -1,7 +1,7 @@
 -- A single private bucket for now (company logos, contact file attachments,
 -- etc.), partitioned by organization via the object key's first path
 -- segment: {org_id}/{entity}/{id}/{filename}. Storage RLS is a separate
--- policy surface from table RLS — easy to forget, so it's set up here
+-- policy surface from table RLS, easy to forget, so it's set up here
 -- alongside the schema rather than deferred.
 insert into storage.buckets (id, name, public)
 values ('org-files', 'org-files', false)

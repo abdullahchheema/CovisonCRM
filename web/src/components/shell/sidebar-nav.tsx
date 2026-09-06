@@ -71,7 +71,7 @@ const BOTTOM_ITEMS: NavItem[] = [
 
 function isActive(pathname: string, href: string): boolean {
   // "/emails/templates" as a nav target should also stay active for
-  // "/emails/groups" and "/emails" (which redirects to /templates) — match
+  // "/emails/groups" and "/emails" (which redirects to /templates), match
   // on the shared "/emails" prefix rather than the full href.
   const base = href.startsWith("/emails") ? "/emails" : href;
   return pathname === base || pathname.startsWith(`${base}/`);
@@ -109,7 +109,7 @@ function NavLink({
 }
 
 // onNavigate is only passed by the mobile drawer (MobileSidebar), which
-// needs to close itself when a link is clicked — the always-visible
+// needs to close itself when a link is clicked, the always-visible
 // desktop sidebar has nothing to close, so it's left undefined there.
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();

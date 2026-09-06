@@ -1,6 +1,6 @@
 import { Reveal } from "@/components/marketing/reveal";
 
-// A second, larger composed mockup — distinct from the hero's
+// A second, larger composed mockup, distinct from the hero's
 // product-preview (a dashboard) and the feature stories' small visuals.
 // This one echoes the detail-page layout (raised activity panel + tonal
 // metadata rail) built in the app's own Phase 6, giving the page real
@@ -10,11 +10,11 @@ export function ProductShowcase() {
     <section id="features" className="mx-auto w-full max-w-6xl px-6 py-20">
       <Reveal className="mb-12 text-center">
         <p className="text-xs font-medium uppercase tracking-wide text-brand">Every record</p>
-        <h2 className="mx-auto mt-3 max-w-2xl font-display text-h1 text-foreground">
+        <h2 className="mx-auto mt-3 max-w-2xl font-display text-h2 text-foreground md:text-h1">
           The whole story, not just the deal.
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-text-2">
-          Every contact, company, and deal keeps its own timeline — notes,
+          Every contact, company, and deal keeps its own timeline, notes,
           calls, and status changes, in one place instead of scattered
           across inboxes and spreadsheets.
         </p>

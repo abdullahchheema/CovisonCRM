@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils";
 
-// The hero's centerpiece visual — composed entirely from real design
+// The hero's centerpiece visual, composed entirely from real design
 // tokens rather than a screenshot. A screenshot would either need a demo
 // account (more to maintain, and a privacy/security surface) or would go
 // stale the moment the real UI changes; this stays accurate by

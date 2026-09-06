@@ -18,7 +18,7 @@ create trigger organization_members_set_updated_at
   before update on public.organization_members
   for each row execute function public.set_updated_at();
 
--- token_hash is sha256(raw_token) — the raw token exists only in the
+-- token_hash is sha256(raw_token). The raw token exists only in the
 -- invitation email, never stored. Mandatory expiry is the direct fix for the
 -- legacy app's permanent, unexpiring reset/verification tokens.
 create table public.organization_invitations (

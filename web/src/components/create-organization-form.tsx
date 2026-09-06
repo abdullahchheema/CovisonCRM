@@ -52,7 +52,7 @@ export function CreateOrganizationForm({
 
     if (error) {
       // A slug collision surfaces as a plain Postgres unique-violation
-      // message here — good enough for now, worth a friendlier mapping
+      // message here, good enough for now, worth a friendlier mapping
       // once this flow gets real usage.
       setError(error.message);
       setIsLoading(false);

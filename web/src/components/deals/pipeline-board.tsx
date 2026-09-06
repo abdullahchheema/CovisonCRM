@@ -119,7 +119,7 @@ export function PipelineBoard({
   const [onlyMine, setOnlyMine] = useState(false);
   const [search, setSearch] = useState("");
 
-  // DealCard's manual stage <select> (kept for keyboard/accessibility —
+  // DealCard's manual stage <select> (kept for keyboard/accessibility,
   // dnd-kit's pointer drag isn't keyboard-operable) triggers router.refresh()
   // rather than updating this component's local state directly, so this
   // needs to resync when the server sends fresh `initialDeals`. Adjusting

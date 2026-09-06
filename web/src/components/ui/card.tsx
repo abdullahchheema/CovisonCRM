@@ -2,7 +2,7 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-// Raised surface — the tonal alternative (no border, --surface-2 bg) is
+// Raised surface. The tonal alternative (no border, --surface-2 bg) is
 // composed directly with className at each call site rather than a second
 // component, since "raised vs tonal" is a per-instance choice, not a
 // separate API.

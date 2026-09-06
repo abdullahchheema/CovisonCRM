@@ -36,11 +36,11 @@ interface SendEmailDialogProps {
   trigger: React.ReactNode;
 }
 
-// Real sending needs an email provider (Resend/SendGrid/etc.) — a separate
+// Real sending needs an email provider (Resend/SendGrid/etc.), a separate
 // milestone, per email_templates' own migration note, needing an account
 // and a job queue for anything beyond "send now". Until that's connected,
 // this logs the send as an activity on each recipient's timeline instead,
-// so the actual picker — one contact or a whole group, choose a template —
+// so the actual picker, one contact or a whole group, choose a template,
 // is fully usable and testable now. Real delivery slots in behind this
 // same dialog later without changing what the user sees.
 export function SendEmailDialog({ organizationId, templates, recipients, trigger }: SendEmailDialogProps) {
@@ -60,7 +60,7 @@ export function SendEmailDialog({ organizationId, templates, recipients, trigger
       recipients.map((recipient) => ({
         organization_id: organizationId,
         type: "email",
-        body: `Sent "${template.name}" — ${template.subject}`,
+        body: `Sent "${template.name}", ${template.subject}`,
         contact_id: recipient.id,
       })),
     );
@@ -115,7 +115,7 @@ export function SendEmailDialog({ organizationId, templates, recipients, trigger
         )}
 
         <p className="text-xs text-text-3">
-          No email provider is connected yet — this logs the send on each
+          No email provider is connected yet. This logs the send on each
           contact&apos;s activity timeline rather than delivering real mail.
         </p>
 

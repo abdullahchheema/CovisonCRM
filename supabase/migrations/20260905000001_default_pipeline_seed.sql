@@ -2,7 +2,7 @@
 -- default pipeline with standard stages, so deals are usable immediately
 -- after a workspace is created rather than requiring a separate setup step.
 -- A new migration replacing the function body, rather than editing
--- 013 in place — that file may already be applied to a live project, and
+-- 013 in place. That file may already be applied to a live project, and
 -- migrations are append-only.
 create or replace function public.create_organization(org_name text, org_slug text)
 returns public.organizations

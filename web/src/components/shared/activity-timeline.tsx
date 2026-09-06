@@ -7,7 +7,7 @@ interface ActivityItem {
 }
 
 // A real vertical rail + dot per entry, matching the treatment on the
-// dashboard's ActivityFeed — used on 5 detail pages (contacts, companies,
+// dashboard's ActivityFeed, used on 5 detail pages (contacts, companies,
 // deals, tasks, tickets).
 export function ActivityTimeline({ activities }: { activities: ActivityItem[] }) {
   if (activities.length === 0) {

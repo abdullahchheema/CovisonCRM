@@ -33,7 +33,7 @@ create index contacts_org_company_idx on public.contacts (organization_id, compa
 create index contacts_org_owner_idx on public.contacts (organization_id, owner_id) where deleted_at is null;
 create index contacts_org_status_idx on public.contacts (organization_id, status) where deleted_at is null;
 
--- Trigram search — replaces the legacy app's unindexed `LIKE '%x%'` scans.
+-- Trigram search, replaces the legacy app's unindexed `LIKE '%x%'` scans.
 create index contacts_name_trgm_idx on public.contacts using gin (name gin_trgm_ops);
 create index contacts_email_trgm_idx on public.contacts using gin (email gin_trgm_ops);
 

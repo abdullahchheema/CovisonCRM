@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-// Scroll-reveal used only on the marketing site — the app itself has no
+// Scroll-reveal used only on the marketing site, the app itself has no
 // scroll-triggered motion. Plays the slide-up keyframe from globals.css
 // once the element enters the viewport, then disconnects.
 // prefers-reduced-motion is already handled globally there (durations

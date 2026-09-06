@@ -1,7 +1,7 @@
 -- audit_logs (010_audit_logs.sql) has existed since M1 with RLS in place,
 -- but nothing has ever written to it. A generic trigger, not scattered
 -- application-level logging calls, is what makes "populated from day one"
--- actually true — a trigger can't be forgotten by a future feature the way
+-- actually true. A trigger can't be forgotten by a future feature the way
 -- an app-level log call can, and it captures soft-deletes (a plain UPDATE
 -- setting deleted_at, which is how every "delete" in this app actually
 -- works) the same as any other change, with no special-casing needed.
@@ -41,7 +41,7 @@ begin
 end;
 $$;
 
--- The four core CRM objects for now — not every table, to keep log volume
+-- The four core CRM objects for now, not every table, to keep log volume
 -- and the "before/after" snapshot size reasonable while this is new.
 -- Extending to tags/pipelines/etc. is a one-line addition per table later.
 create trigger contacts_audit_log

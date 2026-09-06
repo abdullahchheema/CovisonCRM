@@ -1,5 +1,5 @@
 -- An organization can run multiple pipelines (e.g. "New Business" vs
--- "Renewals"), each with its own ordered stages — replacing the legacy
+-- "Renewals"), each with its own ordered stages. This replaces the legacy
 -- app's six hardcoded deal-stage enum values.
 create table public.pipelines (
   id               uuid primary key default gen_random_uuid(),

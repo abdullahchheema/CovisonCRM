@@ -20,7 +20,7 @@ const TabsList = React.forwardRef<
 TabsList.displayName = TabsPrimitive.List.displayName;
 
 // Matches the hand-written active-state pattern already proven in
-// email-nav-tabs.tsx — this primitive generalizes it for every other tab
+// email-nav-tabs.tsx. This primitive generalizes it for every other tab
 // surface in the app.
 const TabsTrigger = React.forwardRef<
   React.ElementRef<typeof TabsPrimitive.Trigger>,

@@ -16,7 +16,7 @@ import { Testimonial } from "@/components/marketing/testimonial";
 import { FinalCta } from "@/components/marketing/final-cta";
 import { SiteFooter } from "@/components/marketing/site-footer";
 
-// Deliberately not gated by requireOrgContext() or any redirect — this
+// Deliberately not gated by requireOrgContext() or any redirect, this
 // route renders identically for every visitor, signed in or not, and
 // nothing else in the app links here, so it's the one page safe to fully
 // replace without touching auth or routing. Login/Get started always show
@@ -33,7 +33,7 @@ export default function Home() {
         <FeatureStory
           eyebrow="Centralize"
           title="Every contact, in one record."
-          description="Names, companies, notes, and history — no more digging through email threads to remember where a relationship left off."
+          description="Names, companies, notes, and history. No more digging through email threads to remember where a relationship left off."
           visual={<ContactVisual />}
         />
         <FeatureStory
@@ -46,7 +46,7 @@ export default function Home() {
         <FeatureStory
           eyebrow="Collaborate"
           title="Tasks your whole team can see."
-          description="Assign work, track tickets, and leave notes that everyone can find — nothing stuck in a single inbox."
+          description="Assign work, track tickets, and leave notes that everyone can find. Nothing stuck in a single inbox."
           visual={<TaskVisual />}
         />
         <FeatureStory

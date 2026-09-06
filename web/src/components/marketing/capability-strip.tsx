@@ -1,6 +1,6 @@
 import { Users, GitBranch, CheckSquare, LifeBuoy, BarChart3 } from "lucide-react";
 
-// Stands in for the usual "trusted by" logo strip — this product has no
+// Stands in for the usual "trusted by" logo strip, this product has no
 // customers to name yet (see the plan's copy-discipline rule: no invented
 // logos or stats), so this names real product areas instead of fabricated
 // social proof.

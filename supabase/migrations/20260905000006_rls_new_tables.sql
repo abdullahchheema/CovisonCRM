@@ -1,4 +1,4 @@
--- RLS for tickets, projects/kanban, and email groups/templates — same
+-- RLS for tickets, projects/kanban, and email groups/templates, same
 -- JWT-claim shape as 012_rls_policies.sql. Re-run
 -- supabase/tests/rls_meta.sql after this: both queries there must still
 -- return zero rows.

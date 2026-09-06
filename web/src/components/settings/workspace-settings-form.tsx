@@ -51,7 +51,7 @@ export function WorkspaceSettingsForm({
   const onSubmit = async (values: WorkspaceFormValues) => {
     const supabase = createClient();
     // organizations_update's RLS policy puts the owner/admin role check in
-    // USING, not just WITH CHECK — verified directly against Postgres that
+    // USING, not just WITH CHECK, verified directly against Postgres that
     // this means a non-admin's UPDATE matches zero rows and returns success
     // with no error at all (confirmed: plain `UPDATE ... WHERE ...` under
     // RLS returns "UPDATE 0", not an error). A bare .update().eq() here
@@ -86,10 +86,10 @@ export function WorkspaceSettingsForm({
     const supabase = createClient();
 
     // Fixed path per org (upsert:true) rather than a unique filename per
-    // upload — keeps exactly one logo object per workspace instead of
+    // upload, keeps exactly one logo object per workspace instead of
     // accumulating orphaned files with no cleanup path. The
     // org_files_insert/update RLS policies (015_storage.sql) require this
-    // path's first segment to equal the caller's current_org_id() —
+    // path's first segment to equal the caller's current_org_id(),
     // verified directly against Postgres, including that a mismatched org
     // id is rejected and a different org can't see this one's object.
     const path = `${organizationId}/logo/current`;

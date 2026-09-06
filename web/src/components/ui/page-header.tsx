@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 // Replaces `<div className="mb-6 flex items-center justify-between">` +
 // `<h1 className="text-xl font-semibold text-foreground">` repeated
 // verbatim across all 20 app pages (6 of them use the items-start variant
-// for a subtitle underneath — pass `align="start"` for that case).
+// for a subtitle underneath, pass `align="start"` for that case).
 interface PageHeaderProps extends Omit<React.HTMLAttributes<HTMLDivElement>, "title"> {
   title: React.ReactNode;
   description?: React.ReactNode;

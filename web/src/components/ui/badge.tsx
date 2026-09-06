@@ -13,7 +13,7 @@ const badgeVariants = cva(
     variants: {
       variant: {
         // bg-muted (--surface-2) is too close to the page background
-        // (--bg) in light mode to read as a pill at all — surface-3 is a
+        // (--bg) in light mode to read as a pill at all, surface-3 is a
         // more distinct step, verified visually in both themes.
         neutral: "bg-surface-3 text-text-2",
         brand: "bg-brand-soft text-primary",

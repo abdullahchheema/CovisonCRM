@@ -9,7 +9,7 @@ const POINTS = [
   {
     title: "Built for how you sell",
     description:
-      "Pipelines, stages, and fields you actually shape yourself — not a generic template you have to work around.",
+      "Pipelines, stages, and fields you actually shape yourself, not a generic template you have to work around.",
   },
   {
     title: "One workspace, not five tabs",
@@ -23,7 +23,7 @@ export function Differentiation() {
     <section className="mx-auto w-full max-w-6xl px-6 py-20">
       <Reveal className="mb-12 max-w-xl">
         <p className="text-xs font-medium uppercase tracking-wide text-brand">Why Covison</p>
-        <h2 className="mt-3 font-display text-h1 text-foreground">
+        <h2 className="mt-3 font-display text-h2 text-foreground md:text-h1">
           Not another cluttered dashboard.
         </h2>
       </Reveal>

@@ -1,14 +1,14 @@
 -- Lead types with per-type custom fields.
 --
--- Different kinds of lead need different details — a truck-dispatching lead
+-- Different kinds of lead need different details. A truck-dispatching lead
 -- carries MC numbers and equipment types, an RCM lead carries NPIs and
--- specialties — and the set of types grows over time. So the field
+-- specialties, and the set of types grows over time. So the field
 -- definitions live in data (a jsonb array on lead_types) rather than as
 -- columns, and each contact's answers live in contacts.custom_fields.
 -- Adding a new lead type or field is then a row edit in the app, never a
 -- migration.
 --
--- Shape of lead_types.fields (validated in the app, not the database — a
+-- Shape of lead_types.fields (validated in the app, not the database, a
 -- CHECK constraint here would mean a migration every time the field-type
 -- list grows, which is exactly what this design is avoiding):
 --   [{ "key": "mc_number",        -- stable slug, never changes once created
@@ -47,7 +47,7 @@ alter table public.contacts
   add column custom_fields jsonb not null default '{}'::jsonb;
 
 -- Composite FK against (id, organization_id), same as every other
--- cross-table reference in this schema — a contact can never point at a
+-- cross-table reference in this schema. A contact can never point at a
 -- lead type belonging to another tenant, and the database enforces that
 -- rather than trusting RLS to.
 alter table public.contacts

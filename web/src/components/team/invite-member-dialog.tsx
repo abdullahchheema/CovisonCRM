@@ -61,7 +61,7 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
 
     const token = data?.[0]?.raw_token;
     if (!token) {
-      toast.error("Invitation created but no link was returned — please try again.");
+      toast.error("Invitation created but no link was returned, please try again.");
       return;
     }
 

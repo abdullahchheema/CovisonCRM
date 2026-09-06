@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Skip static assets and image optimization — running the session
+    // Skip static assets and image optimization, running the session
     // refresh on every CSS/JS/image request would be pure overhead, and
     // Next.js still runs proxy for /_next/data/* regardless of this pattern
     // (see the proxy.md "Good to know" on negative matching).

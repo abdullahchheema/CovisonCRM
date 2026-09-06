@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 
 // Consolidates the `<div className="grid gap-2"><Label/><Input/>{error}
 // </div>` pattern repeated 113 times across every form dialog. Adopted
-// progressively as each form is touched in later phases — existing forms
+// progressively as each form is touched in later phases, existing forms
 // keep working unchanged until then, this doesn't replace them by itself.
 interface FieldProps extends React.HTMLAttributes<HTMLDivElement> {
   label?: React.ReactNode;

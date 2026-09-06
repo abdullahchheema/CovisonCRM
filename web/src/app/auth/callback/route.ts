@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { NextResponse, type NextRequest } from "next/server";
 
-// OAuth (Google, etc.) callback — Supabase redirects here with a `code` to
+// OAuth (Google, etc.) callback. Supabase redirects here with a `code` to
 // exchange for a session. See src/lib/supabase/client.ts's
 // signInWithOAuth({ options: { redirectTo: ".../auth/callback?next=..." } }).
 export async function GET(request: NextRequest) {

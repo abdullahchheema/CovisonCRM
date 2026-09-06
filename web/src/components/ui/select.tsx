@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 // A plain native <select>, restyled with appearance-none + a custom
 // chevron so it matches Input visually instead of rendering the browser's
 // default control. Deliberately still a native element, not a Radix
-// Select — see the file-level note in the design plan on why that
+// Select, see the file-level note in the design plan on why that
 // migration is a separate follow-up (every call site binds it via
 // react-hook-form's {...register()}, which a Radix Select can't do
 // without a <Controller> at every one of ~30 sites).

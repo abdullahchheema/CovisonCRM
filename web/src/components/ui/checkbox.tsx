@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 // A styled replacement for the ~15 bare `<input type="checkbox" className=
 // "size-4" />` sites across the app (selection checkboxes, bulk-select,
-// "only mine" toggles). Adopted progressively — existing native checkboxes
+// "only mine" toggles). Adopted progressively, existing native checkboxes
 // keep working until each is migrated in a later phase.
 const Checkbox = React.forwardRef<
   React.ElementRef<typeof CheckboxPrimitive.Root>,

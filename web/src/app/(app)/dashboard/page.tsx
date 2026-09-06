@@ -76,7 +76,7 @@ export default async function DashboardPage() {
   const openDealsOnly = (openDeals ?? []).filter((d) => !closedStageIds.has(d.stage_id));
   const pipelineValue = openDealsOnly.reduce((sum, deal) => sum + deal.value, 0);
 
-  // Pipeline by stage — every stage (including won/lost), value + count.
+  // Pipeline by stage. Every stage (including won/lost), value + count.
   const stageData = stageList.map((stage) => {
     const dealsInStage = (openDeals ?? []).filter((d) => d.stage_id === stage.id);
     return {
@@ -90,7 +90,7 @@ export default async function DashboardPage() {
   });
 
   // Sparkline: cumulative open-pipeline value by day of deal creation, over
-  // the trailing 14 days — real derived data, not a decorative squiggle.
+  // the trailing 14 days, real derived data, not a decorative squiggle.
   const recentOpenDeals = openDealsOnly.filter((d) => d.created_at >= fourteenDaysAgo);
   const dayBuckets = new Map<string, number>();
   for (let i = 13; i >= 0; i--) {

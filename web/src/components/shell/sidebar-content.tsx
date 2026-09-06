@@ -12,7 +12,7 @@ interface SidebarContentProps {
 }
 
 // Shared between the always-visible desktop <aside> and MobileSidebar's
-// drawer, so the two never drift out of sync — extracted once both needed
+// drawer, so the two never drift out of sync. Extracted once both needed
 // the identical logo block + nav + user menu.
 export function SidebarContent({
   orgName,
@@ -46,7 +46,7 @@ export function SidebarContent({
       </div>
 
       {/* Product branding, kept distinct from the workspace identity at the
-          top — that block answers "which workspace am I in", this one
+          top, that block answers "which workspace am I in", this one
           answers "what is this app". Links out to the marketing site. */}
       <Link
         href="/"

@@ -29,9 +29,9 @@ export default async function AppLayout({
 
   return (
     <div className="flex min-h-svh w-full bg-bg">
-      {/* Sidebar: tonal surface-2, borderless — the tone shift against the
+      {/* Sidebar: tonal surface-2, borderless. The tone shift against the
           bg-bg main column does the separating work instead of a border.
-          Hidden below md — MobileSidebar's drawer (triggered from the
+          Hidden below md. MobileSidebar's drawer (triggered from the
           header) takes over there instead of trying to shrink this same
           layout down to a phone width. */}
       <aside className="hidden w-64 shrink-0 flex-col gap-4 bg-surface-2 p-4 md:flex">

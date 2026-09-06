@@ -14,7 +14,7 @@ interface MobileSidebarProps {
   profileEmail: string;
 }
 
-// The drawer sidebar the plan calls for on mobile — the desktop <aside> in
+// The drawer sidebar the plan calls for on mobile, the desktop <aside> in
 // (app)/layout.tsx is hidden below md, and this fills the same role there.
 // Kept as its own client component (rather than making the whole layout a
 // client component) since only the open/close state needs the browser.

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 
 /**
  * Resolves the signed-in user, their profile, and their active organization
- * for a Server Component — redirecting to the right place if any step is
+ * for a Server Component, redirecting to the right place if any step is
  * missing. Every page under app/(app)/ calls this rather than trusting
  * proxy.ts alone: a proxy matcher change can silently stop covering a route
  * (see the Next.js Data Security guide note in lib/supabase/proxy.ts), so
@@ -35,7 +35,7 @@ export async function requireOrgContext() {
     .single();
 
   // The profile pointed at an org this user is no longer a member of (RLS
-  // hides it) or that no longer exists — either way, back to onboarding
+  // hides it) or that no longer exists, either way, back to onboarding
   // rather than crashing on a null org further down the page.
   if (!org) {
     redirect("/onboarding");

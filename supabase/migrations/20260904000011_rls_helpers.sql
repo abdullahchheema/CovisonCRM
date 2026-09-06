@@ -1,7 +1,7 @@
 -- current_org_id() / current_org_role() read the JWT claims the custom
 -- access token hook writes (see 014_auth_hook_and_trigger.sql). auth.jwt()
 -- is STABLE, and wrapping the call in `(select ...)` at each call site makes
--- Postgres evaluate it once per statement as an InitPlan — after which every
+-- Postgres evaluate it once per statement as an InitPlan, after which every
 -- RLS check below is a constant comparison (`organization_id = $1`) that can
 -- drive the leading column of every composite index, instead of a per-row
 -- database lookup. This is the reason RLS costs ~zero here at query time.
@@ -25,7 +25,7 @@ $$;
 
 -- Used only where the JWT claim can't be trusted yet or doesn't exist: the
 -- bootstrap tables (organizations, organization_members,
--- organization_invitations, profiles) have a chicken-and-egg problem — a
+-- organization_invitations, profiles) have a chicken-and-egg problem, a
 -- user must be able to list their orgs *before* an active_org_id claim
 -- exists, and the org switcher must read orgs other than the active one.
 -- SECURITY DEFINER also breaks the RLS recursion that a plain policy on

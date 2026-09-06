@@ -50,7 +50,7 @@ export function CustomFieldsSection({
           value={leadTypeId}
           onChange={(e) => {
             onLeadTypeChange(e.target.value);
-            // Switching type clears the previous type's answers — keeping
+            // Switching type clears the previous type's answers, keeping
             // them would leave values keyed to fields no longer on the
             // record, invisible in the UI but still in the database.
             onValuesChange({});

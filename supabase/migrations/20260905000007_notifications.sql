@@ -2,7 +2,7 @@
 -- this contact/deal/ticket/..."). Rows are written exclusively by
 -- SECURITY DEFINER trigger functions below (owned by the migration role,
 -- which bypasses RLS the same way create_organization()/invite_member() do
--- in 013_rpc_functions.sql) — there is deliberately no INSERT policy for
+-- in 013_rpc_functions.sql). There is deliberately no INSERT policy for
 -- `authenticated`, so a client can never forge a notification for another
 -- user. Polling-based unread count for v1; Realtime is the natural upgrade
 -- once this is proven, not a prerequisite for it.
@@ -21,7 +21,7 @@ create table public.notifications (
   created_at       timestamptz not null default now()
 );
 
--- Leading column is the recipient, not organization_id — notifications are
+-- Leading column is the recipient, not organization_id, notifications are
 -- read by "which user", never listed by org, and a user may have pending
 -- notifications from an org that isn't their currently active one.
 create index notifications_user_created_idx
@@ -42,7 +42,7 @@ create policy notifications_update on public.notifications for update to authent
 create policy notifications_delete on public.notifications for delete to authenticated
   using (user_id = auth.uid());
 
--- No insert policy — see the file header note.
+-- No insert policy; see the file header note.
 
 -- Shared helper: skip self-assignment (no point notifying someone they
 -- assigned something to themselves) and skip a null assignee.
@@ -72,7 +72,7 @@ end;
 $$;
 
 -- One small trigger function per entity rather than one dynamic-SQL
--- function keyed off TG_TABLE_NAME/TG_ARGV — more code, but each one reads
+-- function keyed off TG_TABLE_NAME/TG_ARGV, more code, but each one reads
 -- top to bottom with no format()-string indirection to trace through.
 
 create or replace function public.notify_contact_assignment()

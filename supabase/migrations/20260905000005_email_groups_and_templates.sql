@@ -1,4 +1,4 @@
--- Email audience lists and templates — data management only. Actual sending
+-- Email audience lists and templates, data management only. Actual sending
 -- is M3 (needs a Resend account + a durable job queue, per the migration
 -- plan); these tables let a workspace build its templates and audiences now
 -- so nothing here needs a second migration pass when sending lands.

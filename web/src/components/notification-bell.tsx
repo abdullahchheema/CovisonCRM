@@ -38,7 +38,7 @@ export function NotificationBell() {
   const [loaded, setLoaded] = useState(false);
   const router = useRouter();
 
-  // Polling, not a one-shot fetch — the request itself is built fresh each
+  // Polling, not a one-shot fetch. The request itself is built fresh each
   // tick so the `.then` callback (not the effect body) is what calls
   // setState, matching command-palette.tsx's shape for the same lint rule.
   useEffect(() => {

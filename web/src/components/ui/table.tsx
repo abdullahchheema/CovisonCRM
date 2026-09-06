@@ -3,7 +3,7 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 // Extracted from the 3 byte-identical table implementations in
-// contacts-table / companies-table / tickets-table. No outer border box —
+// contacts-table / companies-table / tickets-table. No outer border box,
 // a hairline row divider and a sticky header do the work instead of
 // wrapping everything in a bordered card.
 const Table = React.forwardRef<HTMLTableElement, React.HTMLAttributes<HTMLTableElement>>(

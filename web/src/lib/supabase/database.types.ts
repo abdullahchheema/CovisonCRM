@@ -1,18 +1,18 @@
 /**
- * Hand-authored, PARTIAL Supabase database types — covers only the tables
+ * Hand-authored, PARTIAL Supabase database types, covers only the tables
  * queried by app code so far (profiles, organizations). Cross-checked
  * column-by-column against supabase/migrations/20260904000002_*.sql at the
  * time of writing; not a substitute for the real generator.
  *
  * `supabase gen types typescript --db-url ...` errored in this sandbox
- * (LegacyContainerRuntimeNotFoundError — that CLI path shells out to
+ * (LegacyContainerRuntimeNotFoundError. That CLI path shells out to
  * Docker/Podman even with --db-url, and neither is installed here). Once
  * the project is linked and Docker/Podman is available, replace this file
  * with the real thing and delete this comment:
  *
  *   supabase gen types typescript --linked > src/lib/supabase/database.types.ts
  *
- * Add each new table's Row/Insert/Update here as code starts querying it —
+ * Add each new table's Row/Insert/Update here as code starts querying it,
  * or regenerate wholesale once the command above works locally.
  */
 
@@ -292,7 +292,7 @@ export type Database = {
           organization_id: string;
           name: string;
           description: string | null;
-          // Field definitions — validated in app code (see lib/lead-types.ts),
+          // Field definitions, validated in app code (see lib/lead-types.ts),
           // not by the database, so this stays deliberately loose here.
           fields: Record<string, unknown>[];
           position: number;

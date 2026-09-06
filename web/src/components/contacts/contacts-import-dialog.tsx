@@ -17,7 +17,7 @@ import {
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 
-// A professional import needs a hard ceiling — the legacy app's CSV import
+// A professional import needs a hard ceiling. The legacy app's CSV import
 // was fully synchronous with no size limit at all. 1000 rows keeps a single
 // import well within one request's reasonable latency; larger lists should
 // be split, which the error message says explicitly rather than hanging.
@@ -290,7 +290,7 @@ export function ContactsImportDialog({
               {invalidRows.length > 0 && (
                 <p className="mt-1 text-muted-foreground">
                   {invalidRows.length} row{invalidRows.length === 1 ? "" : "s"} will be
-                  skipped — most common issue:{" "}
+                  skipped. Most common issue:{" "}
                   {invalidRows[0]?.errors[0] ?? "unknown"}
                 </p>
               )}

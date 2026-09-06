@@ -18,7 +18,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      /* Theme-agnostic black, not --text — --text flips to near-white in
+      /* Theme-agnostic black, not --text, --text flips to near-white in
          dark mode, which would wash out rather than dim the backdrop. */
       "fixed inset-0 z-50 bg-black/45 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
       className,

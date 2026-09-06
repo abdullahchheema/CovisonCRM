@@ -1,4 +1,4 @@
--- Unified activity feed — replaces the legacy app's separate contact_notes
+-- Unified activity feed, replaces the legacy app's separate contact_notes
 -- collection. Every note, call, email, meeting, or system-generated entry
 -- (e.g. a status change) is one row here, always attached to exactly one
 -- parent so a single query renders a contact/company/deal's timeline.

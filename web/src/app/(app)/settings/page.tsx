@@ -8,7 +8,7 @@ export default async function SettingsPage() {
   const { supabase, profile, org } = await requireOrgContext();
 
   // logo_url isn't in requireOrgContext()'s selection (every page pays for
-  // that query; only this one needs the logo) — a small extra lookup here,
+  // that query; only this one needs the logo). A small extra lookup here,
   // then a signed URL since org-files is a private bucket.
   const { data: orgWithLogo } = await supabase
     .from("organizations")

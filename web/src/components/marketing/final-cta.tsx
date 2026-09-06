@@ -6,7 +6,7 @@ export function FinalCta() {
   return (
     <section className="mx-auto w-full max-w-3xl px-6 py-24 text-center">
       <Reveal>
-        <h2 className="font-display text-h1 text-foreground">
+        <h2 className="font-display text-h2 text-foreground md:text-h1">
           Bring your team into one workspace.
         </h2>
         <p className="mx-auto mt-4 max-w-md text-text-2">

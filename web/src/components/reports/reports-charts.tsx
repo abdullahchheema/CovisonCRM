@@ -16,7 +16,7 @@ interface ChartDatum {
 }
 
 // Every chart here is one measure across an axis-encoded category (deals
-// per stage, contacts per status, deals per month) — not per-slice
+// per stage, contacts per status, deals per month), not per-slice
 // identity, so a single consistent hue is correct rather than a
 // categorical palette. Reads the CSS custom property directly so it
 // tracks light/dark automatically without recomputing anything in JS.

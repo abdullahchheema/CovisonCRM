@@ -38,8 +38,8 @@ const STATUS_LABELS: Record<string, string> = {
   won: "Won",
 };
 
-// A status's job here is state, not identity — the semantic colors, not a
-// categorical palette.
+// A status's job here is state, not identity, so it maps to the semantic
+// colors rather than a categorical palette.
 const STATUS_VARIANT: Record<string, "info" | "brand" | "warning" | "success"> = {
   new: "info",
   qualified: "brand",
@@ -294,7 +294,7 @@ export function ContactsTable({
     const loadedSort = filters.sort as { key: SortKey; dir: "asc" | "desc" } | null | undefined;
     setSort(loadedSort ?? null);
     // Older saved views (from before column customization existed) have no
-    // `columns` key — fall back to the default set rather than showing an
+    // `columns` key, fall back to the default set rather than showing an
     // empty table.
     const loadedColumns = filters.columns as string[] | undefined;
     setVisibleColumns(

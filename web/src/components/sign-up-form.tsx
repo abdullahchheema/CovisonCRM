@@ -28,7 +28,7 @@ export function SignUpForm({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   // Forwarded from an /invite/:token link via the login page's "Sign up"
-  // link, or set directly if someone lands here first — falls back to
+  // link, or set directly if someone lands here first, falls back to
   // onboarding (create a first workspace) for a plain sign-up.
   const next = useSearchParams().get("next") || "/onboarding";
 

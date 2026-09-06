@@ -9,7 +9,7 @@ interface ActivityDatum {
   href?: string;
 }
 
-// Replaces the plain <ul> of activity rows with a real vertical rail —
+// Replaces the plain <ul> of activity rows with a real vertical rail,
 // a connecting line and a dot per entry, standard editorial-timeline
 // treatment. Dashboard-specific for now (the shared ActivityTimeline used
 // on 5 detail pages gets its own pass in the detail-pages phase, since

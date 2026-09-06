@@ -39,7 +39,7 @@ create policy profiles_select_self on public.profiles
   using (id = auth.uid());
 
 -- A user can see the profiles of anyone who shares at least one org with
--- them — needed for assignee pickers, avatars, activity "by" fields, etc.
+-- them, needed for assignee pickers, avatars, activity "by" fields, etc.
 create policy profiles_select_org_members on public.profiles
   for select to authenticated
   using (
@@ -336,6 +336,6 @@ create policy audit_logs_select on public.audit_logs for select to authenticated
 ------------------------------------------------------------------------
 -- Meta-check: every table above should show rowsecurity = true and have at
 -- least one policy. Re-run supabase/tests/rls_meta.sql after adding any new
--- table — a table that fails this silently returns zero rows to everyone,
+-- table, a table that fails this silently returns zero rows to everyone,
 -- or (worse) is left wide open if you forgot to enable RLS at all.
 ------------------------------------------------------------------------

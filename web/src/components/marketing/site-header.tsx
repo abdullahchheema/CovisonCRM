@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CovisonMark } from "@/components/brand/covison-mark";
+import { ThemeToggle } from "@/components/marketing/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -7,8 +8,8 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line-soft bg-bg/80 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <CovisonMark className="size-10" />
-          <span className="font-display text-xl text-foreground">Covison</span>
+          <CovisonMark className="size-8 sm:size-10" />
+          <span className="font-display text-lg text-foreground sm:text-xl">Covison</span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-text-2 md:flex">
@@ -20,7 +21,8 @@ export function SiteHeader() {
           </a>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
+          <ThemeToggle />
           <Button asChild variant="ghost" className="hidden sm:inline-flex">
             <Link href="/auth/login">Log in</Link>
           </Button>

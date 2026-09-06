@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { type NextRequest } from "next/server";
 
 // Handles the link in verification/reset emails (type=signup|recovery|...).
-// Not the OAuth callback — that's /auth/callback, which exchanges a `code`
+// Not the OAuth callback. That's /auth/callback, which exchanges a `code`
 // instead of verifying a `token_hash`.
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

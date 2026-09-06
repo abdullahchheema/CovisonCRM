@@ -2,7 +2,7 @@
 //
 // lead_types.fields is jsonb with no CHECK constraint (see the migration's
 // header note on why), so nothing guarantees its shape at the database
-// layer — every read goes through parseLeadTypeFields() rather than being
+// layer. Every read goes through parseLeadTypeFields() rather than being
 // cast, so a malformed or hand-edited row degrades to "no fields" instead
 // of crashing a page.
 
@@ -30,7 +30,7 @@ export interface LeadTypeField {
 
 /**
  * Derives the stable storage key from a field's label. Generated once when
- * the field is created and then never recomputed — renaming a field's
+ * the field is created and then never recomputed, renaming a field's
  * label must not orphan the values already stored under the old key.
  */
 export function slugifyFieldKey(label: string): string {

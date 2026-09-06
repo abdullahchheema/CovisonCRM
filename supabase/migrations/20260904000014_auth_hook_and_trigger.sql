@@ -26,10 +26,10 @@ create trigger on_auth_user_created
 -- The Custom Access Token Hook. Supabase Auth calls this on every token
 -- issue/refresh and merges whatever it returns back into the JWT. This is
 -- what makes current_org_id()/current_org_role() (013_rls_helpers.sql) free
--- to read at query time — the alternative (a membership lookup inside every
+-- to read at query time. The alternative (a membership lookup inside every
 -- RLS policy) would cost a database round trip per row on every query.
 --
--- IMPORTANT — this function is not wired up by running this migration. You
+-- IMPORTANT: this function is not wired up by running this migration. You
 -- must enable it once in the dashboard: Authentication → Hooks → Customize
 -- Access Token (JWT) Claims hook → select public.custom_access_token_hook.
 -- See SETUP.md for the exact steps.

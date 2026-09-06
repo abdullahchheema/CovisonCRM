@@ -7,7 +7,7 @@ export default function PrivacyPage() {
         <h2 className="mb-2 text-base font-semibold text-foreground">Information we collect</h2>
         <p>
           Describe what account, contact, and usage data Covison collects, and
-          why — e.g. account details at sign-up, the customer data your
+          why: account details at sign-up, the customer data your
           workspace stores (contacts, deals, tasks), and basic product-usage
           analytics.
         </p>

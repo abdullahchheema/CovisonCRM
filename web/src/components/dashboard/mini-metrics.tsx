@@ -4,7 +4,7 @@ interface Metric {
   hint?: string;
 }
 
-// The 1/3-width stacked column beside PipelineHero — replaces 3 of the old
+// The 1/3-width stacked column beside PipelineHero, replaces 3 of the old
 // 4 identical StatCards with rows in one tonal panel instead of 3 separate
 // boxes.
 export function MiniMetrics({ metrics }: { metrics: Metric[] }) {

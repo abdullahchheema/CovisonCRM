@@ -7,7 +7,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden">
       {/* hero-glow.webp is a near-black image, so it only works over the
-          dark theme — in light mode it would read as a dark slab dropped
+          dark theme, in light mode it would read as a dark slab dropped
           on the ivory background. Light mode keeps the CSS bloom instead,
           so both themes look deliberate rather than one being a
           compromise. */}
@@ -29,12 +29,12 @@ export function Hero() {
       </div>
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-6 pb-20 pt-20 text-center md:pt-28">
-        <h1 className="max-w-3xl font-display text-display leading-tight text-foreground">
+        <h1 className="max-w-3xl font-display text-h1 leading-tight sm:text-hero md:text-display text-foreground">
           One calm, uncluttered home for every customer relationship.
         </h1>
         <p className="max-w-xl text-lg text-text-2">
           Covison brings contacts, deals, tasks, and tickets into a single
-          workspace — so your team spends less time managing tools and more
+          workspace, so your team spends less time managing tools and more
           time closing them.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">

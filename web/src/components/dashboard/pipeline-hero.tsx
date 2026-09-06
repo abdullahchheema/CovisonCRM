@@ -5,7 +5,7 @@ interface PipelineHeroProps {
 }
 
 // A small inline sparkline built from real data (cumulative open-pipeline
-// value by day, over the trailing 14 days) — not a decorative squiggle.
+// value by day, over the trailing 14 days), not a decorative squiggle.
 // Hand-rolled SVG rather than pulling recharts into this, since a static
 // line from server-computed points doesn't need a charting library or a
 // "use client" boundary.

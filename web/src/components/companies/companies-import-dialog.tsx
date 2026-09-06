@@ -17,7 +17,7 @@ import {
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 
-// Same 1000-row ceiling as the contacts importer — see that file's comment
+// Same 1000-row ceiling as the contacts importer; see that file's comment
 // for why (the legacy app's CSV import had no size limit at all).
 const MAX_ROWS = 1000;
 
@@ -232,7 +232,7 @@ export function CompaniesImportDialog({ organizationId }: CompaniesImportDialogP
               {invalidRows.length > 0 && (
                 <p className="mt-1 text-muted-foreground">
                   {invalidRows.length} row{invalidRows.length === 1 ? "" : "s"} will be
-                  skipped — missing a name.
+                  skipped (missing a name).
                 </p>
               )}
             </div>

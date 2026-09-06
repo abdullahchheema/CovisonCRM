@@ -1,6 +1,6 @@
 -- Extends the unified activity feed to tickets, and finishes wiring
 -- project_id now that the projects table exists (009_activities.sql's
--- comment: "no FK yet; projects table lands in M4" — it has, as of
+-- comment: "no FK yet; projects table lands in M4", it has, as of
 -- 20260905000004_projects_and_kanban.sql).
 alter table public.activities add column ticket_id uuid;
 

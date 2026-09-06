@@ -13,7 +13,7 @@ const ENTITY_LINKS: Record<string, string> = {
 export default async function ActivityLogPage() {
   const { supabase } = await requireOrgContext();
 
-  // audit_logs_select's RLS restricts this to owner/admin/manager — a
+  // audit_logs_select's RLS restricts this to owner/admin/manager, a
   // member/viewer visiting this page simply sees an empty list rather than
   // an error, since the restriction is enforced at the database layer
   // regardless of what this page does or doesn't check.

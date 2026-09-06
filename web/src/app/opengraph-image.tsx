@@ -2,13 +2,13 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const alt = "Covison — one calm, uncluttered home for every customer relationship.";
+export const alt = "Covison, one calm, uncluttered home for every customer relationship.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 // The artwork is deliberately text-free (a designed background), so the
 // wordmark and headline are still composed here rather than baked into
-// the file — text rendered at export time stays crisp and stays editable.
+// the file, text rendered at export time stays crisp and stays editable.
 // Read once at module scope: it doesn't depend on the request, so there's
 // no reason to hit the filesystem per render.
 const backgroundData = await readFile(join(process.cwd(), "public/og-image.png"), "base64");

@@ -165,7 +165,7 @@ export function ProjectBoard({
   const [activeId, setActiveId] = useState<string | null>(null);
 
   // Resync when the server sends fresh data (e.g. after a column is added
-  // via router.refresh()) — adjust state during render rather than an
+  // via router.refresh()), adjust state during render rather than an
   // effect, same pattern as pipeline-board.tsx.
   const [prevColumns, setPrevColumns] = useState(initialColumns);
   if (initialColumns !== prevColumns) {

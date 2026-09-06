@@ -19,7 +19,7 @@ create trigger organizations_set_updated_at
 
 -- One row per auth.users row, auto-created by the trigger in
 -- 014_auth_hook_and_trigger.sql. active_organization_id is which workspace
--- the user is currently "in" — the custom access token hook reads it to
+-- the user is currently "in". The custom access token hook reads it to
 -- decide what to put in the JWT claim every RLS policy checks.
 create table public.profiles (
   id                      uuid primary key references auth.users(id) on delete cascade,

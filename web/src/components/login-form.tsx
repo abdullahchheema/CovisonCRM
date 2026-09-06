@@ -27,7 +27,7 @@ export function LoginForm({
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const router = useRouter();
   // Set by proxy.ts when it redirects a signed-out visit here (e.g. an
-  // /invite/:token link) — falls back to /dashboard for a direct visit.
+  // /invite/:token link), falls back to /dashboard for a direct visit.
   const next = useSearchParams().get("next") || "/dashboard";
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -68,7 +68,7 @@ export function LoginForm({
       setIsGoogleLoading(false);
     }
     // On success the browser navigates away to Google, so there's nothing
-    // else to do here — no need to reset isGoogleLoading.
+    // else to do here. No need to reset isGoogleLoading.
   };
 
   return (

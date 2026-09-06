@@ -8,7 +8,7 @@ export interface MemberOption {
 
 /**
  * Members of the current org, for assignment pickers (contact/company/deal
- * owner). Two queries + a JS merge, same as everywhere else this session —
+ * owner). Two queries + a JS merge, same as everywhere else this session,
  * the hand-authored Database types carry no relationship metadata for
  * Postgrest's embedded-select syntax.
  */

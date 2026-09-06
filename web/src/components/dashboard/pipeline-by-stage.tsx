@@ -7,7 +7,7 @@ interface StageDatum {
   isLost: boolean;
 }
 
-// Full-width, no card chrome — a row per pipeline stage with a horizontal
+// Full-width, no card chrome. A row per pipeline stage with a horizontal
 // bar sized relative to the highest-value stage. Genuinely new data (deals
 // grouped by stage), not a restyle of something that existed before.
 export function PipelineByStage({ stages }: { stages: StageDatum[] }) {

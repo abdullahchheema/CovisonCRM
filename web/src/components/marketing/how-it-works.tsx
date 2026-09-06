@@ -27,7 +27,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="mx-auto w-full max-w-4xl px-6 py-20">
       <Reveal>
-        <h2 className="mb-14 text-center font-display text-h1 text-foreground">
+        <h2 className="mb-14 text-center font-display text-h2 text-foreground md:text-h1">
           How it works
         </h2>
       </Reveal>

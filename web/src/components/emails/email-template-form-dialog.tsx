@@ -221,7 +221,7 @@ export function EmailTemplateFormDialog({
           </div>
 
           <p className="text-xs text-text-3">
-            Sending isn&apos;t wired up yet — this workspace has no email provider
+            Sending isn&apos;t wired up yet. This workspace has no email provider
             configured. Templates and audiences can be built now and will send
             once that&apos;s set up.
           </p>

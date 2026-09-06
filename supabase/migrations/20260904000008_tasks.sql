@@ -1,4 +1,4 @@
--- Tasks are attachable to a contact, company, or deal — or nothing (a
+-- Tasks are attachable to a contact, company, or deal, or nothing (a
 -- standalone personal to-do). project_id is reserved for M4, when the
 -- projects module lands; it has no FK yet because the projects table
 -- doesn't exist in this schema.

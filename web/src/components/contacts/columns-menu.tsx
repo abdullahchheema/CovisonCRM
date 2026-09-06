@@ -17,7 +17,7 @@ interface ColumnsMenuProps {
   onChange: (columns: string[]) => void;
 }
 
-// Per-user column visibility + order for a table — deliberately not baked
+// Per-user column visibility + order for a table, deliberately not baked
 // into the Table primitive itself, since only the contacts list needs this
 // so far. Persisted the same way filters already are: it's just another
 // key in the SavedViewsMenu's `filters` JSON (see contacts-table.tsx),
@@ -52,7 +52,7 @@ export function ColumnsMenu({ allColumns, visibleColumns, onChange }: ColumnsMen
       <PopoverContent align="start" className="w-72 p-0">
         <div className="border-b border-border px-4 py-3">
           <p className="text-sm font-medium text-foreground">Visible columns</p>
-          <p className="text-xs text-text-3">Reorder with the arrows — save as a view to keep it.</p>
+          <p className="text-xs text-text-3">Reorder with the arrows, save as a view to keep it.</p>
         </div>
         <div className="max-h-80 overflow-y-auto p-2">
           {visibleColumns.map((key, index) => (

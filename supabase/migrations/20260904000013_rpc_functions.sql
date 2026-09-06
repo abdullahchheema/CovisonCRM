@@ -29,7 +29,7 @@ grant execute on function public.create_organization(text, text) to authenticate
 
 -- Switches which org the caller's JWT will claim on next refresh. The app
 -- must call supabase.auth.refreshSession() after this to pick up the new
--- active_org_id/org_role claims — this function only updates the pointer.
+-- active_org_id/org_role claims. This function only updates the pointer.
 create or replace function public.set_active_org(org uuid)
 returns void
 language plpgsql
@@ -50,7 +50,7 @@ $$;
 grant execute on function public.set_active_org(uuid) to authenticated;
 
 -- Creates a hashed, expiring invitation and returns the ONE-TIME raw token
--- for the caller to email. The raw token is never stored — only its hash.
+-- for the caller to email. The raw token is never stored, only its hash.
 create or replace function public.invite_member(
   org uuid,
   invite_email citext,
@@ -84,7 +84,7 @@ $$;
 grant execute on function public.invite_member(uuid, citext, public.org_role) to authenticated;
 
 -- Accepts an invitation by its raw token. Requires the caller's profile
--- email to match the invited email — otherwise a leaked/forwarded link
+-- email to match the invited email, otherwise a leaked/forwarded link
 -- could let a different account join.
 create or replace function public.accept_invitation(raw_token text)
 returns public.organizations

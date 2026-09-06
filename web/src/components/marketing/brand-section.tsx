@@ -4,13 +4,13 @@ import { Reveal } from "@/components/marketing/reveal";
 
 // The one section that stays dark regardless of the visitor's theme (see
 // the --ink token added in Phase 8, used here for the same reason as the
-// login hero panel) — a deliberate change of register mid-page, the way a
+// login hero panel). A deliberate change of register mid-page, the way a
 // print magazine will run one page as a full-bleed plate.
 export function BrandSection() {
   return (
     <section className="relative overflow-hidden bg-ink py-24">
       {/* This panel is --ink in both themes, so the dark texture sits
-          correctly here without a light/dark variant — unlike the hero,
+          correctly here without a light/dark variant, unlike the hero,
           whose background follows the theme. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <Image
@@ -24,8 +24,8 @@ export function BrandSection() {
       </div>
       <Reveal className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-6 text-center">
         <CovisonMark className="size-20" />
-        <p className="font-display text-h1 leading-snug text-white">
-          Covison is a quieter kind of software — considered, editorial,
+        <p className="font-display text-h2 leading-snug text-white md:text-h1">
+          Covison is a quieter kind of software, considered, editorial,
           built to be lived in rather than logged into.
         </p>
         <p className="text-white/60">

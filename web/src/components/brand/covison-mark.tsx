@@ -1,8 +1,8 @@
 import Image from "next/image";
 
-// The brand mark. Every surface that shows the logo — marketing header and
-// footer, the brand section, the auth shell, the login hero — renders
-// through this one component, so swapping the artwork is a one-file change.
+// The brand mark. Every surface that shows the logo (marketing header and
+// footer, the brand section, the auth shell, the login hero) renders through
+// this one component, so swapping the artwork is a one-file change.
 //
 // The supplied file was a JPEG (white background baked in, no alpha), which
 // would have shown as a white box on the dark theme and on the always-dark

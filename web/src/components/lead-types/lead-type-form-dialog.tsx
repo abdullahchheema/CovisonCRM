@@ -41,7 +41,7 @@ interface LeadTypeFormDialogProps {
 }
 
 // A draft field carries its committed storage key separately from its
-// label. Renaming a label must not change the key — the answers already
+// label. Renaming a label must not change the key, the answers already
 // stored in contacts.custom_fields are keyed by it, and rewriting that key
 // would orphan every existing value. `key: null` means "not yet saved", so
 // the key gets derived from the label at save time.
@@ -200,7 +200,7 @@ export function LeadTypeFormDialog({
             <Label htmlFor="lead-type-description">Description</Label>
             <Input
               id="lead-type-description"
-              placeholder="Optional — what this type is for"
+              placeholder="Optional, what this type is for"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
@@ -217,7 +217,7 @@ export function LeadTypeFormDialog({
 
           {fields.length === 0 ? (
             <p className="py-2 text-sm text-text-3">
-              No extra fields yet — contacts of this type will just show the
+              No extra fields yet, contacts of this type will just show the
               standard details.
             </p>
           ) : (

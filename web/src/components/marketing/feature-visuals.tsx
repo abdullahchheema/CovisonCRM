@@ -1,7 +1,7 @@
 import Image from "next/image";
 
 // The four feature-story illustrations. These replaced hand-built CSS
-// mockups of the real UI — the two product mockups that show actual
+// mockups of the real UI. The two product mockups that show actual
 // interface (ProductPreview in the hero, ProductShowcase mid-page) are
 // still there, so the page keeps showing the real thing twice while these
 // rows carry the visual weight.
@@ -9,7 +9,7 @@ import Image from "next/image";
 // Each illustration has a warm off-white background baked into the file,
 // so the image fills its card edge to edge rather than sitting on a
 // themed surface. In dark mode that reads as a deliberate light plate,
-// which is the intent — a themed frame around a cream image would just
+// which is the intent. A themed frame around a cream image would just
 // look like a mismatch.
 const SIZE = { width: 1200, height: 896 };
 

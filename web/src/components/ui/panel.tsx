@@ -7,11 +7,11 @@ import { cn } from "@/lib/utils";
 // components/ui/card.tsx entirely (dashboard, detail pages, team,
 // reports, ...). Two surface treatments, not a border-around-everything
 // default:
-//   - "raised"  (default) — bg-surface + soft shadow, no border. The
+//   - "raised"  (default), bg-surface + soft shadow, no border. The
 //     card floating above the page.
-//   - "tonal"   — bg-surface-2, no border, no shadow. A panel that reads
+//   - "tonal", bg-surface-2, no border, no shadow. A panel that reads
 //     as part of the page rather than a box sitting on it. Use this far
-//     more than "raised" — not every piece of information needs a box.
+//     more than "raised", not every piece of information needs a box.
 const panelVariants = cva("rounded-xl p-4", {
   variants: {
     variant: {

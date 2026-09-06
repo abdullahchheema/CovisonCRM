@@ -6,7 +6,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils";
 
-// Small, precise, slightly spaced-out uppercase label — the "premium
+// Small, precise, slightly spaced-out uppercase label, the "premium
 // compact form" treatment. A single-file change that reaches all ~113
 // form fields in the app, since every one of them already uses <Label>.
 const labelVariants = cva(

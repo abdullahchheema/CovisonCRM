@@ -16,10 +16,10 @@ export function RevokeInvitationButton({ invitationId }: { invitationId: string 
     const supabase = createClient();
     // organization_invitations_update's RLS policy has the owner/admin role
     // check in USING, not just WITH CHECK (same pattern verified against
-    // real Postgres for organizations_update — a mismatched USING clause
+    // real Postgres for organizations_update. A mismatched USING clause
     // means "0 rows updated", not an error). This path is currently
     // unreachable from a non-admin anyway, since they can't SELECT pending
-    // invitations to see a Revoke button at all — but .select().single()
+    // invitations to see a Revoke button at all, but .select().single()
     // here is what would actually surface a rejection if that ever changes,
     // rather than a silent no-op wearing a success toast.
     const { error } = await supabase

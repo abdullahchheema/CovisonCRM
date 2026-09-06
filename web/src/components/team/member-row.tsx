@@ -40,7 +40,7 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
     const supabase = createClient();
     // organization_members_update's RLS puts the owner/admin check in
     // USING (same pattern as organizations_update, verified earlier this
-    // session) — a non-admin's attempt matches zero rows with no error,
+    // session), a non-admin's attempt matches zero rows with no error,
     // so .select().single() is what actually surfaces that as PGRST116
     // instead of a silent no-op.
     const { error } = await supabase
@@ -90,7 +90,7 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
   };
 
   if (isSelf) {
-    // Deliberately no self-service role change or self-removal here — the
+    // Deliberately no self-service role change or self-removal here, the
     // schema has no "must have at least one owner" constraint, so the
     // simplest safe guard against a sole owner locking themselves out is
     // just not offering the control on your own row at all.

@@ -1,6 +1,6 @@
 -- Append-only. Populated from day one rather than retrofitted later, so
 -- there's no gap in history. Real writes come from SECURITY DEFINER RPCs /
--- triggers (added as each feature ships) or the service role — regular
+-- triggers (added as each feature ships) or the service role, regular
 -- authenticated users can only read their own org's log, never write to it.
 create table public.audit_logs (
   id               bigint generated always as identity primary key,

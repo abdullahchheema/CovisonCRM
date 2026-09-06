@@ -20,7 +20,7 @@ import { cn } from "@/lib/utils";
 const emptySubscribe = () => () => {};
 
 // Same mount-detection pattern as the old theme-toggle.tsx (kept here
-// rather than imported — that component is being replaced by this menu in
+// rather than imported. That component is being replaced by this menu in
 // the shell; see the (app)/layout.tsx diff).
 function useIsMounted() {
   return useSyncExternalStore(

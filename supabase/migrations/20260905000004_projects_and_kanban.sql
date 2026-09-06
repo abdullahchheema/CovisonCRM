@@ -1,5 +1,5 @@
 -- Projects module: a project has ordered columns, each holding ordered
--- cards (todos) — the nested kanban board from the legacy app's
+-- cards (todos). The nested kanban board from the legacy app's
 -- projects/columns/todos collections, flattened onto three org-scoped
 -- tables with composite FKs instead of bare projectId/columnId strings.
 create table public.projects (

@@ -17,7 +17,7 @@ create table public.companies (
   updated_at       timestamptz not null default now(),
   deleted_at       timestamptz,
   -- Lets child tables composite-FK to (id, organization_id), so a row can
-  -- never reference a company in another tenant — the database can't
+  -- never reference a company in another tenant. The database can't
   -- represent it, rather than merely being policed by RLS.
   unique (id, organization_id)
 );

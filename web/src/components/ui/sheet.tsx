@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 // A left-edge drawer, built from the same Radix Dialog primitive as
 // ui/dialog.tsx (full focus-trap / Escape / scroll-lock behavior for
-// free) — used for the mobile sidebar. Not a generic multi-side Sheet:
+// free), used for the mobile sidebar. Not a generic multi-side Sheet:
 // this app only ever needs one edge, so it isn't parameterized for others.
 const Sheet = DialogPrimitive.Root;
 const SheetTrigger = DialogPrimitive.Trigger;

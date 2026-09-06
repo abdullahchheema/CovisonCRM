@@ -43,7 +43,7 @@ export default async function LeadTypesPage() {
       {!error && parsed.length === 0 && (
         <EmptyState
           title="No lead types yet"
-          description="Create one — for example Truck dispatching or RCM — and give it the fields that kind of lead needs."
+          description="Create one, for example Truck dispatching or RCM, and give it the fields that kind of lead needs."
         />
       )}
 
