@@ -21,18 +21,11 @@ deleting them, so history of what shipped stays visible.
 - [ ] Replace the placeholder text on `/privacy` and `/terms` with real,
       reviewed policy text before the app handles real user data. Both
       pages carry a visible placeholder banner until then.
-- [ ] Logo. The marketing images are in `web/public/`, but the logo is
-      still the inline SVG monogram in `components/brand/covison-mark.tsx`
-      (gradient tile + "C"). It's crisp at any size and theme-aware, so
-      it's fine indefinitely — replacing it is a brand call, not a gap.
-      When you do: drop `logo-mark.svg` (square symbol) and optionally
-      `logo-full.svg` (~600x160, symbol + wordmark) into `web/public/`,
-      then covison-mark.tsx is the single place to swap — the header,
-      footer, brand section, auth shell, and login hero all render through
-      it. Note the generated favicon/apple-icon/OG mark are drawn
-      separately in `app/icon.tsx`, `app/apple-icon.tsx` and
-      `app/opengraph-image.tsx` (fixed hex, since Satori can't read CSS
-      variables), so those need the same change to stay consistent.
+- [ ] Optional: re-cut the logo as a true vector. `public/logo-mark.png` is
+      a 512px raster traced out of the supplied JPEG (background removed).
+      It's sharp at every size the app currently renders it, so this is
+      polish, not a defect — worth doing if the mark ever needs to go large
+      (print, billboard, big hero lockup).
 - [ ] Decide on merging `hotfix/w0-security-hardening` into `master` (legacy
       Go app security patches — JWT leak, permission checks, token expiry).
       Merging triggers a live deploy of the old app, so left for your call.
@@ -71,6 +64,13 @@ accounts) or worth asking the user for direction on:
 
 ## Done (recent)
 
+- [x] Brand logo wired in — `public/logo-mark.png` (supplied artwork with
+      its white JPEG background cut out) now renders through
+      `components/brand/covison-mark.tsx`, so the header, footer, brand
+      section, auth shell and login hero all pick it up, as do the
+      generated favicon, apple-icon and OG card.
+- [x] Marketing artwork on the homepage — hero glow (dark theme only),
+      brand-section texture, and four feature illustrations.
 - [x] Lead types with per-type custom fields — org-defined types, each
       owning a jsonb field list (text/number/date/dropdown/checkbox,
       required flag, reorderable); `contacts.lead_type_id` +

@@ -14,6 +14,9 @@ export const contentType = "image/png";
 const backgroundData = await readFile(join(process.cwd(), "public/og-image.png"), "base64");
 const backgroundSrc = `data:image/png;base64,${backgroundData}`;
 
+const markData = await readFile(join(process.cwd(), "public/logo-mark.png"), "base64");
+const markSrc = `data:image/png;base64,${markData}`;
+
 export default function Image() {
   return new ImageResponse(
     (
@@ -39,22 +42,8 @@ export default function Image() {
         />
 
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
-          <div
-            style={{
-              display: "flex",
-              width: 56,
-              height: 56,
-              borderRadius: 16,
-              background: "linear-gradient(135deg, #6d4aff, #8b5cf6)",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              fontSize: 32,
-              fontWeight: 700,
-            }}
-          >
-            C
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element -- Satori render, not the browser DOM */}
+          <img src={markSrc} alt="" width={56} height={56} />
           <span style={{ color: "#fff", fontSize: 32 }}>Covison</span>
         </div>
 

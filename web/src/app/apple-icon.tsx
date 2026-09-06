@@ -1,8 +1,13 @@
 import { ImageResponse } from "next/og";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 
-// Same mark as icon.tsx, at the size iOS expects for home-screen icons.
+// Same mark as icon.tsx, at the size iOS uses for home-screen icons.
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
+
+const markData = await readFile(join(process.cwd(), "public/logo-mark.png"), "base64");
+const markSrc = `data:image/png;base64,${markData}`;
 
 export default function AppleIcon() {
   return new ImageResponse(
@@ -14,11 +19,11 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 40,
-          background: "linear-gradient(135deg, #6d4aff, #8b5cf6)",
+          background: "#120f1a",
         }}
       >
-        <span style={{ color: "#fff", fontSize: 108, fontWeight: 700 }}>C</span>
+        {/* eslint-disable-next-line @next/next/no-img-element -- Satori render, not the browser DOM */}
+        <img src={markSrc} alt="" width={128} height={128} />
       </div>
     ),
     { ...size },
