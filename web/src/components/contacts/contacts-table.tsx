@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SavedViewsMenu, type SavedView } from "@/components/shared/saved-views-menu";
+import { ColumnsMenu, type ColumnDef } from "@/components/contacts/columns-menu";
 import { createClient } from "@/lib/supabase/client";
 
 function toCsvValue(value: string): string {
@@ -46,6 +47,20 @@ const STATUS_VARIANT: Record<string, "info" | "brand" | "warning" | "success"> =
   won: "success",
 };
 
+const PRIORITY_LABELS: Record<string, string> = {
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  veryHigh: "Very high",
+};
+
+const PRIORITY_VARIANT: Record<string, "neutral" | "info" | "warning" | "danger"> = {
+  low: "neutral",
+  medium: "info",
+  high: "warning",
+  veryHigh: "danger",
+};
+
 interface ContactRow {
   id: string;
   name: string;
@@ -53,9 +68,40 @@ interface ContactRow {
   phone: string | null;
   job_title: string | null;
   status: string;
+  priority: string | null;
   company_id: string | null;
   owner_id: string | null;
+  linkedin_url: string | null;
+  website: string | null;
+  country: string | null;
+  city: string | null;
+  niche: string | null;
+  expected_revenue: number | null;
+  expected_close: string | null;
 }
+
+// Every optional column the table can show, beyond the fixed Name column.
+// DEFAULT_COLUMN_KEYS matches what the table showed before this existed, so
+// nobody's view changes until they open the Columns menu themselves.
+const DEFAULT_COLUMN_KEYS = ["company", "email", "job_title", "status", "tags", "owner"];
+
+const ALL_COLUMNS: ColumnDef[] = [
+  { key: "company", label: "Company" },
+  { key: "email", label: "Email" },
+  { key: "phone", label: "Phone" },
+  { key: "job_title", label: "Job title" },
+  { key: "status", label: "Status" },
+  { key: "priority", label: "Priority" },
+  { key: "tags", label: "Tags" },
+  { key: "owner", label: "Owner" },
+  { key: "linkedin", label: "LinkedIn" },
+  { key: "website", label: "Website" },
+  { key: "country", label: "Country" },
+  { key: "city", label: "City" },
+  { key: "niche", label: "Niche" },
+  { key: "expected_revenue", label: "Expected revenue" },
+  { key: "expected_close", label: "Expected close" },
+];
 
 type SortKey = "name" | "email" | "job_title" | "status";
 
@@ -98,6 +144,7 @@ export function ContactsTable({
   const [bulkTagId, setBulkTagId] = useState("");
   const [isBulkTagging, setIsBulkTagging] = useState(false);
   const [sort, setSort] = useState<{ key: SortKey; dir: "asc" | "desc" } | null>(null);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(DEFAULT_COLUMN_KEYS);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -217,6 +264,7 @@ export function ContactsTable({
     tagFilter,
     onlyMine,
     sort,
+    columns: visibleColumns,
   };
 
   const applyFilters = (filters: Record<string, unknown>) => {
@@ -226,6 +274,13 @@ export function ContactsTable({
     if (typeof filters.onlyMine === "boolean") setOnlyMine(filters.onlyMine);
     const loadedSort = filters.sort as { key: SortKey; dir: "asc" | "desc" } | null | undefined;
     setSort(loadedSort ?? null);
+    // Older saved views (from before column customization existed) have no
+    // `columns` key — fall back to the default set rather than showing an
+    // empty table.
+    const loadedColumns = filters.columns as string[] | undefined;
+    setVisibleColumns(
+      Array.isArray(loadedColumns) && loadedColumns.length > 0 ? loadedColumns : DEFAULT_COLUMN_KEYS,
+    );
   };
 
   const exportCsv = () => {
@@ -250,6 +305,116 @@ export function ContactsTable({
     link.download = `contacts-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
+  };
+
+  const columnLabel = Object.fromEntries(ALL_COLUMNS.map((c) => [c.key, c.label]));
+
+  const renderColumnHeader = (key: string) => {
+    switch (key) {
+      case "email":
+        return (
+          <button type="button" onClick={() => toggleSort("email")} className="hover:text-foreground">
+            Email{sortIndicator("email")}
+          </button>
+        );
+      case "job_title":
+        return (
+          <button type="button" onClick={() => toggleSort("job_title")} className="hover:text-foreground">
+            Job title{sortIndicator("job_title")}
+          </button>
+        );
+      case "status":
+        return (
+          <button type="button" onClick={() => toggleSort("status")} className="hover:text-foreground">
+            Status{sortIndicator("status")}
+          </button>
+        );
+      default:
+        return columnLabel[key] ?? key;
+    }
+  };
+
+  const renderColumnCell = (contact: ContactRow, key: string) => {
+    switch (key) {
+      case "company":
+        return contact.company_id ? (companyNameById[contact.company_id] ?? "—") : "—";
+      case "email":
+        return contact.email ?? "—";
+      case "phone":
+        return contact.phone ?? "—";
+      case "job_title":
+        return contact.job_title ?? "—";
+      case "status":
+        return (
+          <Badge variant={STATUS_VARIANT[contact.status] ?? "neutral"}>
+            {STATUS_LABELS[contact.status] ?? contact.status}
+          </Badge>
+        );
+      case "priority":
+        return contact.priority ? (
+          <Badge variant={PRIORITY_VARIANT[contact.priority] ?? "neutral"}>
+            {PRIORITY_LABELS[contact.priority] ?? contact.priority}
+          </Badge>
+        ) : (
+          "—"
+        );
+      case "tags":
+        return (
+          <div className="flex flex-wrap gap-1">
+            {(tagsByContactId[contact.id] ?? []).map((tag) => (
+              <Badge key={tag.id} variant="neutral">
+                {tag.name}
+              </Badge>
+            ))}
+          </div>
+        );
+      case "owner":
+        return contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—";
+      case "linkedin":
+        return contact.linkedin_url ? (
+          <a
+            href={contact.linkedin_url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            Profile
+          </a>
+        ) : (
+          "—"
+        );
+      case "website":
+        return contact.website ? (
+          <a
+            href={contact.website}
+            target="_blank"
+            rel="noreferrer"
+            className="text-primary hover:underline"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {contact.website.replace(/^https?:\/\//, "")}
+          </a>
+        ) : (
+          "—"
+        );
+      case "country":
+        return contact.country ?? "—";
+      case "city":
+        return contact.city ?? "—";
+      case "niche":
+        return contact.niche ?? "—";
+      case "expected_revenue":
+        return contact.expected_revenue != null
+          ? new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(
+              contact.expected_revenue,
+            )
+          : "—";
+      case "expected_close":
+        return contact.expected_close ? new Date(contact.expected_close).toLocaleDateString() : "—";
+      default:
+        return "—";
+    }
   };
 
   return (
@@ -289,6 +454,7 @@ export function ContactsTable({
           <Checkbox checked={onlyMine} onCheckedChange={(v) => setOnlyMine(v === true)} />
           Only mine
         </label>
+        <ColumnsMenu allColumns={ALL_COLUMNS} visibleColumns={visibleColumns} onChange={setVisibleColumns} />
         <SavedViewsMenu
           organizationId={organizationId}
           currentUserId={currentUserId}
@@ -400,32 +566,9 @@ export function ContactsTable({
                   Name{sortIndicator("name")}
                 </button>
               </TableHead>
-              <TableHead>Company</TableHead>
-              <TableHead>
-                <button type="button" onClick={() => toggleSort("email")} className="hover:text-foreground">
-                  Email{sortIndicator("email")}
-                </button>
-              </TableHead>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => toggleSort("job_title")}
-                  className="hover:text-foreground"
-                >
-                  Job title{sortIndicator("job_title")}
-                </button>
-              </TableHead>
-              <TableHead>
-                <button
-                  type="button"
-                  onClick={() => toggleSort("status")}
-                  className="hover:text-foreground"
-                >
-                  Status{sortIndicator("status")}
-                </button>
-              </TableHead>
-              <TableHead>Tags</TableHead>
-              <TableHead>Owner</TableHead>
+              {visibleColumns.map((key) => (
+                <TableHead key={key}>{renderColumnHeader(key)}</TableHead>
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -443,28 +586,9 @@ export function ContactsTable({
                     {contact.name}
                   </Link>
                 </TableCell>
-                <TableCell>
-                  {contact.company_id ? (companyNameById[contact.company_id] ?? "—") : "—"}
-                </TableCell>
-                <TableCell>{contact.email ?? "—"}</TableCell>
-                <TableCell>{contact.job_title ?? "—"}</TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANT[contact.status] ?? "neutral"}>
-                    {STATUS_LABELS[contact.status] ?? contact.status}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {(tagsByContactId[contact.id] ?? []).map((tag) => (
-                      <Badge key={tag.id} variant="neutral">
-                        {tag.name}
-                      </Badge>
-                    ))}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {contact.owner_id ? (ownerNameById[contact.owner_id] ?? "—") : "—"}
-                </TableCell>
+                {visibleColumns.map((key) => (
+                  <TableCell key={key}>{renderColumnCell(contact, key)}</TableCell>
+                ))}
               </TableRow>
             ))}
           </TableBody>

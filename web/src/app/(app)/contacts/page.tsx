@@ -3,6 +3,7 @@ import { ContactFormDialog } from "@/components/contacts/contact-form-dialog";
 import { ContactsImportDialog } from "@/components/contacts/contacts-import-dialog";
 import { ContactsTable } from "@/components/contacts/contacts-table";
 import { getOrgMemberOptions } from "@/lib/supabase/org-members";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default async function ContactsPage() {
   const { supabase, org, profile } = await requireOrgContext();
@@ -11,7 +12,9 @@ export default async function ContactsPage() {
     await Promise.all([
       supabase
         .from("contacts")
-        .select("id, name, email, phone, job_title, status, company_id, owner_id, created_at")
+        .select(
+          "id, name, email, phone, job_title, status, priority, company_id, owner_id, linkedin_url, website, country, city, niche, expected_revenue, expected_close, created_at",
+        )
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
       supabase
@@ -56,13 +59,15 @@ export default async function ContactsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">Contacts</h1>
-        <div className="flex gap-2">
-          <ContactsImportDialog organizationId={org.id} existingCompanies={companies ?? []} />
-          <ContactFormDialog organizationId={org.id} companies={companies ?? []} members={members} />
-        </div>
-      </div>
+      <PageHeader
+        title="Contacts"
+        actions={
+          <>
+            <ContactsImportDialog organizationId={org.id} existingCompanies={companies ?? []} />
+            <ContactFormDialog organizationId={org.id} companies={companies ?? []} members={members} />
+          </>
+        }
+      />
 
       {error && <p className="text-sm text-danger">{error.message}</p>}
 
