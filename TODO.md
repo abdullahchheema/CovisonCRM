@@ -7,16 +7,28 @@ deleting them, so history of what shipped stays visible.
 
 ## Action needed from you (not engineering work)
 
-- [ ] Apply migrations `20260905000003` through `20260905000009` to the live
-      Supabase project (SQL Editor, same as the first 15) — tickets,
-      projects/kanban, email groups/templates, notifications, saved views,
-      and the activities extension (ticket_id + project_id FK) schema +
-      RLS. Re-run `supabase/tests/rls_meta.sql` after; both queries must
-      return 0 rows.
+- [x] Apply migrations `20260905000003` through `20260905000009` to the live
+      Supabase project — done (confirmed indirectly: the seed script inserts
+      into tickets/projects/email_groups/saved_views successfully).
+- [x] Apply `20260906000001_lead_types_and_custom_fields` — done.
+- [ ] Vercel: set Production Branch to `web-app` (Project Settings → Git).
+      Pushes currently deploy as *Preview* only, so the live URL keeps
+      serving an older commit until each deployment is promoted by hand.
+- [ ] Supabase Auth → URL Configuration: confirm Site URL and Redirect URLs
+      point at the live Vercel domain. Never verified after the original
+      localhost:3000 OAuth misredirect; the stray `?code=...` seen on the
+      homepage suggests it may still be wrong.
+- [ ] Replace the placeholder text on `/privacy` and `/terms` with real,
+      reviewed policy text before the app handles real user data. Both
+      pages carry a visible placeholder banner until then.
 - [ ] Decide on merging `hotfix/w0-security-hardening` into `master` (legacy
       Go app security patches — JWT leak, permission checks, token expiry).
       Merging triggers a live deploy of the old app, so left for your call.
-- [ ] Google OAuth / email-password auth already verified working end to end.
+- [ ] Functional regression pass on the deployed app — the items that need a
+      real browser session and can't be driven from here: Google OAuth
+      round trip preserving `?next=`, signed-out redirect, brand-new-user
+      onboarding, `/invite/[token]` flow, and a CRUD/drag/CSV/bulk smoke
+      test.
 
 ## In progress / next up
 
@@ -34,15 +46,37 @@ accounts) or worth asking the user for direction on:
 ## Deferred — needs an external account or a bigger schema decision
 
 - [ ] Real email sending (Resend account + durable job queue — M3 in the
-      migration plan). Email Groups/Templates UI is built and ready;
-      nothing there needs to change when this lands.
-- [ ] Custom fields (per-org field registry, not EAV — see migration plan's
-      "Deviations from the brief"). M6-sized.
+      migration plan). The send picker (one contact / a group / pick a
+      template) is now built and logs each send as an activity; connecting
+      a provider replaces that logging step and changes nothing in the UI.
+      Scheduled/recurring templates still need the job queue on top.
 - [ ] Billing/seats (Stripe). M8-sized, no accounts provisioned yet.
-- [ ] Marketing site / AI features. M8, explicitly last in the plan.
+- [ ] AI features. M8, explicitly last in the plan.
+- [ ] Custom fields as *contacts-list columns*, scoped to a lead-type
+      filter. Left out of the lead-types work on purpose: a field belongs
+      to one type, so an unscoped column reads "—" for every contact of
+      another type.
 
 ## Done (recent)
 
+- [x] Lead types with per-type custom fields — org-defined types, each
+      owning a jsonb field list (text/number/date/dropdown/checkbox,
+      required flag, reorderable); `contacts.lead_type_id` +
+      `custom_fields`. Self-serve builder at `/lead-types`, dynamic fields
+      in the contact create/edit dialogs, a per-type section on the detail
+      page, and lead type as a list filter/column. Replaces the old
+      "custom fields (per-org field registry)" deferred item.
+- [x] Send email to one contact or a whole group, picking a template —
+      logs an activity per recipient (no provider connected yet).
+- [x] Per-user contacts column customization (show/hide/reorder, saved
+      through the existing saved-views `filters` JSON).
+- [x] Complete visual reinvention, 10 phases — design tokens, component
+      system, app shell, dashboard, list views, detail pages/boards, the
+      remaining screens, auth/login, the public marketing site, and a
+      mobile drawer + accessibility pass. Typography later switched to a
+      single bold Geist family at the user's request.
+- [x] Public marketing site at `/` with generated favicon/OG image, plus
+      `/privacy` and `/terms` (placeholder legal text, clearly labelled).
 - [x] Bulk delete on tasks (TaskRow gained an optional selection
       checkbox).
 - [x] CSV import for companies.
