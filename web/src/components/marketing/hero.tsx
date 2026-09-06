@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ProductPreview } from "@/components/marketing/product-preview";
@@ -5,8 +6,26 @@ import { ProductPreview } from "@/components/marketing/product-preview";
 export function Hero() {
   return (
     <section className="relative overflow-hidden">
-      <div aria-hidden className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-[-12rem] size-[36rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl" />
+      {/* hero-glow.webp is a near-black image, so it only works over the
+          dark theme — in light mode it would read as a dark slab dropped
+          on the ivory background. Light mode keeps the CSS bloom instead,
+          so both themes look deliberate rather than one being a
+          compromise. */}
+      <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute left-1/2 top-[-12rem] size-[36rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl dark:hidden" />
+        <div className="absolute inset-0 hidden dark:block">
+          <Image
+            src="/hero-glow.webp"
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover opacity-70"
+          />
+          {/* Fades the image out before the section ends so it blends into
+              the page rather than stopping at a hard edge. */}
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-bg" />
+        </div>
       </div>
 
       <div className="relative mx-auto flex w-full max-w-6xl flex-col items-center gap-10 px-6 pb-20 pt-20 text-center md:pt-28">

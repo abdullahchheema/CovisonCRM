@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { CovisonMark } from "@/components/brand/covison-mark";
 import { Reveal } from "@/components/marketing/reveal";
 
@@ -8,7 +9,17 @@ import { Reveal } from "@/components/marketing/reveal";
 export function BrandSection() {
   return (
     <section className="relative overflow-hidden bg-ink py-24">
+      {/* This panel is --ink in both themes, so the dark texture sits
+          correctly here without a light/dark variant — unlike the hero,
+          whose background follows the theme. */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
+        <Image
+          src="/brand-texture.webp"
+          alt=""
+          fill
+          sizes="100vw"
+          className="object-cover opacity-60"
+        />
         <div className="absolute left-1/2 top-0 size-[32rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand/20 blur-3xl" />
       </div>
       <Reveal className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-6 text-center">
