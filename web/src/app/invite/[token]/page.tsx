@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AcceptInvitationClient } from "@/components/team/accept-invitation-client";
+import { AuthShell } from "@/components/auth/auth-shell";
 
 // Deliberately does NOT use requireOrgContext() — that redirects to
 // /onboarding when the signed-in user has no active org yet, which is
@@ -22,5 +23,9 @@ export default async function InvitePage({
     redirect(`/auth/login?next=${encodeURIComponent(`/invite/${token}`)}`);
   }
 
-  return <AcceptInvitationClient token={token} />;
+  return (
+    <AuthShell>
+      <AcceptInvitationClient token={token} />
+    </AuthShell>
+  );
 }

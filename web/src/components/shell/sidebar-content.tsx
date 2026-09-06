@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { CovisonMark } from "@/components/brand/covison-mark";
 import { SidebarNav } from "@/components/shell/sidebar-nav";
 import { UserMenu } from "@/components/shell/user-menu";
 
@@ -42,6 +44,17 @@ export function SidebarContent({
       <div className="border-t border-line-soft pt-3">
         <UserMenu name={profileName} email={profileEmail} />
       </div>
+
+      {/* Product branding, kept distinct from the workspace identity at the
+          top — that block answers "which workspace am I in", this one
+          answers "what is this app". Links out to the marketing site. */}
+      <Link
+        href="/"
+        className="flex items-center gap-2 px-2 pb-1 pt-1 text-text-3 transition-colors hover:text-foreground"
+      >
+        <CovisonMark className="size-6" />
+        <span className="font-display text-sm">Covison</span>
+      </Link>
     </>
   );
 }

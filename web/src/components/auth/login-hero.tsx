@@ -51,8 +51,8 @@ export function LoginHero() {
       </div>
 
       <Link href="/" className="relative z-10 flex items-center gap-2">
-        <CovisonMark className="size-8" />
-        <span className="font-display text-lg text-white">Covison</span>
+        <CovisonMark className="size-11" />
+        <span className="font-display text-xl text-white">Covison</span>
       </Link>
 
       <div className="relative z-10 max-w-md">

@@ -1,4 +1,5 @@
 import { CreateOrganizationForm } from "@/components/create-organization-form";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -24,11 +25,12 @@ export default async function Page() {
     redirect("/dashboard");
   }
 
+  // Same branded frame as the auth pages — this is the last step of the
+  // sign-up flow, so it shouldn't drop the branding the user just came
+  // through.
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <CreateOrganizationForm />
-      </div>
-    </div>
+    <AuthShell>
+      <CreateOrganizationForm />
+    </AuthShell>
   );
 }

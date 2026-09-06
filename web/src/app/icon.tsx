@@ -3,9 +3,12 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 // Browser-tab icon, generated rather than shipped as a binary so it stays
-// in step with the mark in public/. Satori renders this outside any page's
-// cascade, so it can't read the design tokens — the plate colour is the
-// literal --ink value, and the mark comes in as a data URI.
+// in step with the mark in public/, which comes in as a data URI since
+// Satori renders outside any page's cascade.
+//
+// No plate behind it: the mark is a saturated violet with transparency, so
+// it reads on both light and dark browser chrome and can fill the whole
+// frame instead of sitting inside a box. At 32px every pixel counts.
 export const size = { width: 32, height: 32 };
 export const contentType = "image/png";
 
@@ -22,12 +25,10 @@ export default function Icon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderRadius: 7,
-          background: "#120f1a",
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori render, not the browser DOM */}
-        <img src={markSrc} alt="" width={24} height={24} />
+        <img src={markSrc} alt="" width={32} height={32} />
       </div>
     ),
     { ...size },

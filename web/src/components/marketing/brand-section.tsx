@@ -23,7 +23,7 @@ export function BrandSection() {
         <div className="absolute left-1/2 top-0 size-[32rem] -translate-x-1/2 -translate-y-1/3 rounded-full bg-brand/20 blur-3xl" />
       </div>
       <Reveal className="relative mx-auto flex w-full max-w-2xl flex-col items-center gap-6 px-6 text-center">
-        <CovisonMark className="size-12" />
+        <CovisonMark className="size-20" />
         <p className="font-display text-h1 leading-snug text-white">
           Covison is a quieter kind of software — considered, editorial,
           built to be lived in rather than logged into.

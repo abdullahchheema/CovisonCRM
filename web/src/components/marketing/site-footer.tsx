@@ -16,8 +16,8 @@ export function SiteFooter() {
     <footer className="border-t border-line-soft">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="flex items-center gap-2">
-          <CovisonMark className="size-6" />
-          <span className="font-display text-lg text-foreground">Covison</span>
+          <CovisonMark className="size-9" />
+          <span className="font-display text-xl text-foreground">Covison</span>
         </div>
 
         <div className="flex flex-wrap gap-x-16 gap-y-8 text-sm">

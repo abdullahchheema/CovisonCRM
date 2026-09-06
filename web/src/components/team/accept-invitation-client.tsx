@@ -45,20 +45,18 @@ export function AcceptInvitationClient({ token }: { token: string }) {
     accept();
   }, [token, router]);
 
+  // The centred/branded frame lives on the page (AuthShell), so this
+  // renders just the card.
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display text-h3">
-              {status === "error" ? "Couldn't accept invitation" : "Joining workspace"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-text-2">{message}</p>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle className="font-display text-h3">
+          {status === "error" ? "Couldn't accept invitation" : "Joining workspace"}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-text-2">{message}</p>
+      </CardContent>
+    </Card>
   );
 }

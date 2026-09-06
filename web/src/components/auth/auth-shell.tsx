@@ -18,8 +18,8 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </div>
       <div className="relative w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <CovisonMark className="size-8" />
-          <span className="font-display text-lg text-foreground">Covison</span>
+          <CovisonMark className="size-11" />
+          <span className="font-display text-xl text-foreground">Covison</span>
         </Link>
         {children}
       </div>

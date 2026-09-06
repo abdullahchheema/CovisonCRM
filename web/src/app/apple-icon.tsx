@@ -3,6 +3,9 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 // Same mark as icon.tsx, at the size iOS uses for home-screen icons.
+// This one keeps the --ink plate: iOS composites home-screen icons onto an
+// opaque square regardless, so a transparent background would just come out
+// black rather than adopting the wallpaper.
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
@@ -23,7 +26,7 @@ export default function AppleIcon() {
         }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element -- Satori render, not the browser DOM */}
-        <img src={markSrc} alt="" width={128} height={128} />
+        <img src={markSrc} alt="" width={144} height={144} />
       </div>
     ),
     { ...size },

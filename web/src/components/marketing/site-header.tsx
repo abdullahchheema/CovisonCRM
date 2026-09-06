@@ -6,9 +6,9 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-line-soft bg-bg/80 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2">
-          <CovisonMark className="size-7" />
-          <span className="font-display text-lg text-foreground">Covison</span>
+        <Link href="/" className="flex items-center gap-2.5">
+          <CovisonMark className="size-10" />
+          <span className="font-display text-xl text-foreground">Covison</span>
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-text-2 md:flex">
