@@ -11,6 +11,13 @@ deleting them, so history of what shipped stays visible.
       Supabase project, done (confirmed indirectly: the seed script inserts
       into tickets/projects/email_groups/saved_views successfully).
 - [x] Apply `20260906000001_lead_types_and_custom_fields`, done.
+- [ ] Apply `20260911000001_fix_invite_pgcrypto_search_path` to the live
+      Supabase project. Fixes "Invite member" throwing `function
+      gen_random_bytes(integer) does not exist`: Supabase-hosted projects
+      install pgcrypto into the `extensions` schema, not `public`, so
+      `invite_member`/`accept_invitation`'s `set search_path = public` never
+      had it on the path. Couldn't verify locally this session (no Docker in
+      this environment) so test the invite flow end to end after applying.
 - [ ] Vercel: set Production Branch to `web-app` (Project Settings → Git).
       Pushes currently deploy as *Preview* only, so the live URL keeps
       serving an older commit until each deployment is promoted by hand.
