@@ -1024,6 +1024,10 @@ export type Database = {
         Args: { raw_token: string };
         Returns: Database["public"]["Tables"]["organizations"]["Row"];
       };
+      mark_contact_contacted: {
+        Args: { p_contact_id: string };
+        Returns: void;
+      };
     };
     Enums: {
       org_role: "owner" | "admin" | "manager" | "member" | "viewer";

@@ -3,7 +3,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -43,6 +43,16 @@ const templateSchema = z.object({
 type TemplateFormValues = z.infer<typeof templateSchema>;
 type EmailTemplate = Database["public"]["Tables"]["email_templates"]["Row"];
 
+// Kept in sync by hand with the substitution list in
+// lib/email/send-template-email.ts's renderTemplate(), so what's offered
+// to click here and what actually gets replaced at send time never drift.
+const PLACEHOLDERS = [
+  { token: "{{first_name}}", label: "First name" },
+  { token: "{{name}}", label: "Full name" },
+  { token: "{{email}}", label: "Email" },
+  { token: "{{company}}", label: "Company" },
+] as const;
+
 interface EmailTemplateFormDialogProps {
   organizationId: string;
   groups: { id: string; name: string }[];
@@ -58,10 +68,14 @@ export function EmailTemplateFormDialog({
 }: EmailTemplateFormDialogProps) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const subjectElRef = useRef<HTMLInputElement | null>(null);
+  const bodyElRef = useRef<HTMLTextAreaElement | null>(null);
   const {
     register,
     handleSubmit,
     control,
+    getValues,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<TemplateFormValues>({
     resolver: zodResolver(templateSchema),
@@ -82,6 +96,23 @@ export function EmailTemplateFormDialog({
   });
 
   const frequency = useWatch({ control, name: "frequency" });
+
+  // Inserts at the cursor (or the end, if the field's never been focused)
+  // rather than always appending, so a placeholder can be dropped into the
+  // middle of a sentence, not just tacked on after it.
+  const insertPlaceholder = (field: "subject" | "body", token: string) => {
+    const el = field === "subject" ? subjectElRef.current : bodyElRef.current;
+    const current = getValues(field) ?? "";
+    const start = el?.selectionStart ?? current.length;
+    const end = el?.selectionEnd ?? current.length;
+    const next = current.slice(0, start) + token + current.slice(end);
+    setValue(field, next, { shouldDirty: true });
+    requestAnimationFrame(() => {
+      el?.focus();
+      const pos = start + token.length;
+      el?.setSelectionRange(pos, pos);
+    });
+  };
 
   const onSubmit = async (values: TemplateFormValues) => {
     const supabase = createClient();
@@ -143,10 +174,23 @@ export function EmailTemplateFormDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="subject">Subject</Label>
-            <Input id="subject" {...register("subject")} />
+            {(() => {
+              const { ref, ...subjectField } = register("subject");
+              return (
+                <Input
+                  id="subject"
+                  {...subjectField}
+                  ref={(el) => {
+                    ref(el);
+                    subjectElRef.current = el;
+                  }}
+                />
+              );
+            })()}
             {errors.subject && (
               <p className="text-sm text-danger">{errors.subject.message}</p>
             )}
+            <PlaceholderPicker onInsert={(token) => insertPlaceholder("subject", token)} />
           </div>
           <div className="grid gap-2">
             <Label htmlFor="recipient_group_id">Recipients (group)</Label>
@@ -161,10 +205,21 @@ export function EmailTemplateFormDialog({
           </div>
           <div className="grid gap-2">
             <Label htmlFor="body">Body</Label>
-            <Textarea id="body" rows={5} {...register("body")} />
-            <p className="text-xs text-text-3">
-              Dynamic variables: {"{{name}}"}, {"{{email}}"}
-            </p>
+            {(() => {
+              const { ref, ...bodyField } = register("body");
+              return (
+                <Textarea
+                  id="body"
+                  rows={5}
+                  {...bodyField}
+                  ref={(el) => {
+                    ref(el);
+                    bodyElRef.current = el;
+                  }}
+                />
+              );
+            })()}
+            <PlaceholderPicker onInsert={(token) => insertPlaceholder("body", token)} />
           </div>
 
           <div className="rounded-lg bg-surface-2 p-4">
@@ -221,9 +276,10 @@ export function EmailTemplateFormDialog({
           </div>
 
           <p className="text-xs text-text-3">
-            Sending isn&apos;t wired up yet. This workspace has no email provider
-            configured. Templates and audiences can be built now and will send
-            once that&apos;s set up.
+            This template can be sent right away from a contact or a group
+            (the Send button elsewhere in Emails). The schedule above is for
+            recurring sends, not wired up yet: it needs a job queue that
+            isn&apos;t built.
           </p>
 
           <DialogFooter>
@@ -234,5 +290,25 @@ export function EmailTemplateFormDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// A row of click-to-insert pills rather than asking someone to remember and
+// type "{{first_name}}" by hand.
+function PlaceholderPicker({ onInsert }: { onInsert: (token: string) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-xs text-text-3">Insert:</span>
+      {PLACEHOLDERS.map((placeholder) => (
+        <button
+          key={placeholder.token}
+          type="button"
+          onClick={() => onInsert(placeholder.token)}
+          className="rounded-full bg-surface-3 px-2 py-0.5 text-xs font-medium text-text-2 hover:bg-brand-soft hover:text-primary"
+        >
+          {placeholder.label}
+        </button>
+      ))}
+    </div>
   );
 }

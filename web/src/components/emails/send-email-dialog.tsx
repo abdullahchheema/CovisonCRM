@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
-import { createClient } from "@/lib/supabase/client";
+import { sendTemplateEmail } from "@/lib/email/send-template-email";
 
 interface EmailTemplateOption {
   id: string;
@@ -36,13 +36,6 @@ interface SendEmailDialogProps {
   trigger: React.ReactNode;
 }
 
-// Real sending needs an email provider (Resend/SendGrid/etc.), a separate
-// milestone, per email_templates' own migration note, needing an account
-// and a job queue for anything beyond "send now". Until that's connected,
-// this logs the send as an activity on each recipient's timeline instead,
-// so the actual picker, one contact or a whole group, choose a template,
-// is fully usable and testable now. Real delivery slots in behind this
-// same dialog later without changing what the user sees.
 export function SendEmailDialog({ organizationId, templates, recipients, trigger }: SendEmailDialogProps) {
   const [open, setOpen] = useState(false);
   const [templateId, setTemplateId] = useState("");
@@ -54,27 +47,29 @@ export function SendEmailDialog({ organizationId, templates, recipients, trigger
   const handleSend = async () => {
     if (!template || recipients.length === 0) return;
     setIsSending(true);
-    const supabase = createClient();
 
-    const { error } = await supabase.from("activities").insert(
-      recipients.map((recipient) => ({
-        organization_id: organizationId,
-        type: "email",
-        body: `Sent "${template.name}", ${template.subject}`,
-        contact_id: recipient.id,
-      })),
+    const result = await sendTemplateEmail(
+      organizationId,
+      template.id,
+      recipients.map((r) => r.id),
     );
 
     setIsSending(false);
 
-    if (error) {
-      toast.error(error.message);
+    if (result.sent === 0) {
+      toast.error(result.errors[0] ?? "Send failed.");
       return;
     }
 
-    toast.success(
-      `Logged "${template.name}" for ${recipients.length} contact${recipients.length === 1 ? "" : "s"}.`,
-    );
+    if (result.failed > 0) {
+      toast.warning(
+        `Sent to ${result.sent} of ${recipients.length}. ${result.errors[0] ?? ""}`.trim(),
+      );
+    } else {
+      toast.success(
+        `Sent "${template.name}" to ${result.sent} contact${result.sent === 1 ? "" : "s"}.`,
+      );
+    }
     setOpen(false);
     setTemplateId("");
     router.refresh();
@@ -115,8 +110,8 @@ export function SendEmailDialog({ organizationId, templates, recipients, trigger
         )}
 
         <p className="text-xs text-text-3">
-          No email provider is connected yet. This logs the send on each
-          contact&apos;s activity timeline rather than delivering real mail.
+          Sends now, personalized per contact, and logs on each recipient&apos;s
+          activity timeline.
         </p>
 
         <DialogFooter>
