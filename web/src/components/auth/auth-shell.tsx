@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CovisonMark } from "@/components/brand/covison-mark";
+import { CovisonLogo } from "@/components/brand/covison-logo";
 
 // Shared wrapper for the 5 auth pages that don't need the bespoke split
 // composition (login is the only one that does; see login/page.tsx):
@@ -18,8 +18,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </div>
       <div className="relative w-full max-w-sm">
         <Link href="/" className="mb-8 flex items-center justify-center gap-2">
-          <CovisonMark className="size-11" />
-          <span className="font-display text-xl text-foreground">Covison</span>
+          <CovisonLogo markClassName="size-11" lockupClassName="h-11" textClassName="text-xl" />
         </Link>
         {children}
       </div>

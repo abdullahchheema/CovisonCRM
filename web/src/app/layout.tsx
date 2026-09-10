@@ -20,12 +20,19 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  // Resolves the opengraph-image/icon routes to an absolute URL. VERCEL_URL
-  // is set automatically by Vercel at build time to the deployment's own
-  // domain, falling back to localhost only matters for a local build,
-  // never for what actually ships.
+  // Resolves the opengraph-image/icon routes to an absolute URL. The
+  // production deployment now lives at the crm.covison.com custom domain,
+  // not the per-deployment VERCEL_URL host (that one's still right for
+  // preview deployments, which have no custom domain of their own).
+  // VERCEL_ENV is "production" only for builds on the Production Branch;
+  // NODE_ENV is "production" for preview builds too, so it can't be used
+  // to tell them apart.
   metadataBase: new URL(
-    process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000",
+    process.env.VERCEL_ENV === "production"
+      ? "https://crm.covison.com"
+      : process.env.VERCEL_URL
+        ? `https://${process.env.VERCEL_URL}`
+        : "http://localhost:3000",
   ),
   title: "Covison CRM",
   description: "One workspace for contacts, deals, tasks, and communication.",

@@ -333,6 +333,24 @@ body {
   }
 }
 
+/*
+ * Ambient hero glow for a light background: a soft radial violet bloom,
+ * anchored top-center, fading to nothing by 70% down the box. Dark
+ * surfaces use hero-glow.webp instead (a photographed glow reads on dark,
+ * this flat tint would not), so the bloom turns itself off in dark mode
+ * rather than layering under the image.
+ */
+.bloom {
+  background-image: radial-gradient(
+    ellipse 60% 50% at 50% 0%,
+    color-mix(in srgb, var(--brand) 16%, transparent) 0%,
+    transparent 70%
+  );
+}
+.dark .bloom {
+  background-image: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

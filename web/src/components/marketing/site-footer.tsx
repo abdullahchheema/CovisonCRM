@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CovisonMark } from "@/components/brand/covison-mark";
+import { CovisonLogo } from "@/components/brand/covison-logo";
 
 const PRODUCT_LINKS = [
   { href: "/auth/login", label: "Log in" },
@@ -16,8 +16,7 @@ export function SiteFooter() {
     <footer className="border-t border-line-soft">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-6 py-12 md:flex-row md:justify-between">
         <div className="flex items-center gap-2">
-          <CovisonMark className="size-9" />
-          <span className="font-display text-xl text-foreground">Covison</span>
+          <CovisonLogo markClassName="size-9" lockupClassName="h-9" textClassName="text-xl" />
         </div>
 
         <div className="flex flex-wrap gap-x-16 gap-y-8 text-sm">

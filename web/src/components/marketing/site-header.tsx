@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CovisonMark } from "@/components/brand/covison-mark";
+import { CovisonLogo } from "@/components/brand/covison-logo";
 import { ThemeToggle } from "@/components/marketing/theme-toggle";
 import { Button } from "@/components/ui/button";
 
@@ -8,8 +8,11 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-line-soft bg-bg/80 backdrop-blur-sm">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-2.5">
-          <CovisonMark className="size-8 sm:size-10" />
-          <span className="font-display text-lg text-foreground sm:text-xl">Covison</span>
+          <CovisonLogo
+            markClassName="size-8 sm:size-10"
+            lockupClassName="h-8 sm:h-10"
+            textClassName="text-xl"
+          />
         </Link>
 
         <nav className="hidden items-center gap-8 text-sm text-text-2 md:flex">

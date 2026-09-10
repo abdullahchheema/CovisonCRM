@@ -12,7 +12,7 @@ export function Hero() {
           so both themes look deliberate rather than one being a
           compromise. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-1/2 top-[-12rem] size-[36rem] -translate-x-1/2 rounded-full bg-brand/10 blur-3xl dark:hidden" />
+        <div className="bloom absolute inset-0 dark:hidden" />
         <div className="absolute inset-0 hidden dark:block">
           <Image
             src="/hero-glow.webp"
@@ -45,6 +45,9 @@ export function Hero() {
             <a href="#how-it-works">See how it works</a>
           </Button>
         </div>
+        <p className="text-sm text-text-3">
+          Covison CRM is free forever. No trial period, no credit card required.
+        </p>
 
         <div className="w-full pt-6">
           <ProductPreview />

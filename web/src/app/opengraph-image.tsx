@@ -44,7 +44,9 @@ export default function Image() {
         <div style={{ display: "flex", alignItems: "center", gap: 16, position: "relative" }}>
           {/* eslint-disable-next-line @next/next/no-img-element -- Satori render, not the browser DOM */}
           <img src={markSrc} alt="" width={56} height={56} />
-          <span style={{ color: "#fff", fontSize: 32 }}>Covison</span>
+          <span style={{ color: "#fff", fontSize: 32, fontWeight: 700, letterSpacing: -0.3 }}>
+            Covison
+          </span>
         </div>
 
         <div style={{ display: "flex", marginTop: 56, position: "relative" }}>
