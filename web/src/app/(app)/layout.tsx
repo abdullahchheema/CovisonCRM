@@ -28,13 +28,17 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="flex min-h-svh w-full bg-bg">
+    <div className="flex h-svh w-full overflow-hidden bg-bg">
       {/* Sidebar: tonal surface-2, borderless. The tone shift against the
           bg-bg main column does the separating work instead of a border.
           Hidden below md. MobileSidebar's drawer (triggered from the
           header) takes over there instead of trying to shrink this same
-          layout down to a phone width. */}
-      <aside className="hidden w-64 shrink-0 flex-col gap-4 bg-surface-2 p-4 md:flex">
+          layout down to a phone width.
+          h-full + its own overflow-y-auto is what makes SidebarNav's
+          `mt-auto`-pinned Team/Settings section actually pin to the
+          bottom of the viewport instead of the bottom of whatever the
+          main column's content height happens to be. */}
+      <aside className="hidden h-full w-64 shrink-0 flex-col gap-4 overflow-y-auto bg-surface-2 p-4 md:flex">
         <SidebarContent
           orgName={org.name}
           logoSignedUrl={logoSignedUrl}
@@ -43,8 +47,8 @@ export default async function AppLayout({
         />
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between gap-4 bg-bg/80 px-4 py-3 backdrop-blur-sm md:px-6">
+      <div className="flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="flex shrink-0 items-center justify-between gap-4 bg-bg/80 px-4 py-3 backdrop-blur-sm md:px-6">
           <div className="flex items-center gap-2">
             <MobileSidebar
               orgName={org.name}
@@ -58,7 +62,7 @@ export default async function AppLayout({
             <NotificationBell />
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 md:px-6 lg:px-8">
+        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-6 lg:px-8">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
