@@ -18,6 +18,22 @@ deleting them, so history of what shipped stays visible.
       `invite_member`/`accept_invitation`'s `set search_path = public` never
       had it on the path. Couldn't verify locally this session (no Docker in
       this environment) so test the invite flow end to end after applying.
+- [ ] Apply `20260911000002_contacted_stage_and_auto_move` to the live
+      Supabase project. Adds a "Contacted" pipeline stage and
+      `mark_contact_contacted()`, see the Done entry below for what it does.
+- [ ] Create a Resend account, add `RESEND_API_KEY` (and `RESEND_FROM_EMAIL`
+      once a sending domain is verified in Resend) as env vars in Vercel.
+      Without `RESEND_API_KEY`, "Send email" fails with a clear
+      "no email provider configured" error rather than silently no-op'ing.
+      Until a domain is verified, `RESEND_FROM_EMAIL` falls back to
+      Resend's shared `onboarding@resend.dev`, which only delivers to the
+      email the Resend account itself signed up with, fine for a first
+      test send, not for real contacts.
+- [ ] Run `supabase gen types typescript` against the live project after
+      applying the migration above, to replace the hand-added
+      `mark_contact_contacted` entry in `database.types.ts` (added by hand
+      this session since regenerating needs live DB access) with the real
+      generated one.
 - [ ] Vercel: set Production Branch to `web-app` (Project Settings → Git).
       Pushes currently deploy as *Preview* only, so the live URL keeps
       serving an older commit until each deployment is promoted by hand.
@@ -57,11 +73,10 @@ accounts) or worth asking the user for direction on:
 
 ## Deferred, needs an external account or a bigger schema decision
 
-- [ ] Real email sending (Resend account + durable job queue, M3 in the
-      migration plan). The send picker (one contact / a group / pick a
-      template) is now built and logs each send as an activity; connecting
-      a provider replaces that logging step and changes nothing in the UI.
-      Scheduled/recurring templates still need the job queue on top.
+- [ ] Scheduled/recurring template sends (the Frequency/day-of-week/
+      day-of-month fields already on the template form). One-time "send
+      now" is done, see below; recurring needs a durable job queue on top,
+      which this doesn't have yet.
 - [ ] Billing/seats (Stripe). M8-sized, no accounts provisioned yet.
 - [ ] AI features. M8, explicitly last in the plan.
 - [ ] Custom fields as *contacts-list columns*, scoped to a lead-type
@@ -71,6 +86,22 @@ accounts) or worth asking the user for direction on:
 
 ## Done (recent)
 
+- [x] Real email sending via Resend, replacing the log-only placeholder.
+      Per-recipient personalization ({{name}}, {{first_name}}, {{email}},
+      {{company}}), click-to-insert placeholder pills in the template
+      editor, and `mark_contact_contacted()`: after a send, the contact's
+      single most-recently-created open deal auto-moves to a new
+      "Contacted" pipeline stage (added after the first stage of every
+      pipeline). No open deal, or a custom pipeline with no Contacted
+      stage, is a no-op, nothing is auto-created. Needs `RESEND_API_KEY`
+      set (see Action needed above) to actually send.
+- [x] App shell layout fix: sidebar now scrolls independently from the main
+      panel instead of both sharing one page-level scroll (was pushing
+      Team/Settings far down the sidebar on any tall page).
+- [x] Loading-state audit across buttons/forms app-wide: bulk deletes,
+      CSV imports, form submits, and team management actions already had
+      a pending state; found and fixed the one real gap, the pipeline
+      board's inline deal-stage dropdown.
 - [x] Brand logo wired in, `public/logo-mark.png` (supplied artwork with
       its white JPEG background cut out) now renders through
       `components/brand/covison-mark.tsx`, so the header, footer, brand
