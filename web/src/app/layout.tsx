@@ -42,7 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
           {children}
           {/* richColors removed. Toaster now themes off the [data-sonner-toaster]
               CSS custom properties defined in globals.css, so toasts follow
