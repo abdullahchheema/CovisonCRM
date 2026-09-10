@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Link from "next/link";
+import { useState } from "react";
 
 import { Select } from "@/components/ui/select";
 import { SoftDeleteButton } from "@/components/shared/soft-delete-button";
@@ -29,13 +30,17 @@ interface DealCardProps {
 
 export function DealCard({ deal, stages, contacts, companies, members, contactName }: DealCardProps) {
   const router = useRouter();
+  const [isChangingStage, setIsChangingStage] = useState(false);
 
   const handleStageChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setIsChangingStage(true);
     const supabase = createClient();
     const { error } = await supabase
       .from("deals")
       .update({ stage_id: e.target.value })
       .eq("id", deal.id);
+
+    setIsChangingStage(false);
 
     if (error) {
       toast.error(error.message);
@@ -64,7 +69,12 @@ export function DealCard({ deal, stages, contacts, companies, members, contactNa
         </Link>
       )}
       <div className="mt-2 flex items-center gap-2">
-        <Select value={deal.stage_id} onChange={handleStageChange} className="h-7 text-xs">
+        <Select
+          value={deal.stage_id}
+          onChange={handleStageChange}
+          disabled={isChangingStage}
+          className="h-7 text-xs"
+        >
           {stages.map((stage) => (
             <option key={stage.id} value={stage.id}>
               {stage.name}
