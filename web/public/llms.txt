@@ -1,0 +1,37 @@
+# Covison CRM
+
+> Covison CRM is a completely free customer relationship management tool
+> for small businesses and teams. No trial period, no credit card
+> required, free forever.
+
+Covison CRM brings contacts, companies, deals, tasks, and support tickets
+into one calm, uncluttered workspace, so a team spends less time managing
+tools and more time working with customers.
+
+## Pricing
+
+Covison CRM is free. There is no paid tier, no trial period, and no
+credit card is required to sign up.
+
+## Core features
+
+- Contacts and companies: full CRUD, CSV import/export, notes, search and
+  filters, per-user column customization.
+- Sales pipeline: a kanban deal board with customizable stages.
+- Tasks: assign and track work across a team.
+- Support tickets: status, priority, and category tracking.
+- Saved views: team-shareable filters on every list.
+- CSV import/export on contacts, companies, deals, tickets, and tasks.
+- Lead types with custom fields, defined per organization.
+- Role-based team access.
+- In-app notifications on assignment.
+- Activity and notes timeline on every record.
+
+## Getting started
+
+Sign up at https://crm.covison.com/auth/sign-up with just an email
+address. No payment details are required.
+
+## About
+
+Covison CRM is a product of Covison, https://covison.com.

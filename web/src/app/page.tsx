@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { SiteHeader } from "@/components/marketing/site-header";
 import { Hero } from "@/components/marketing/hero";
 import { CapabilityStrip } from "@/components/marketing/capability-strip";
@@ -13,8 +14,44 @@ import { ProductShowcase } from "@/components/marketing/product-showcase";
 import { Differentiation } from "@/components/marketing/differentiation";
 import { BrandSection } from "@/components/marketing/brand-section";
 import { Testimonial } from "@/components/marketing/testimonial";
+import { Faq } from "@/components/marketing/faq";
 import { FinalCta } from "@/components/marketing/final-cta";
 import { SiteFooter } from "@/components/marketing/site-footer";
+
+const FREE_CRM_DESCRIPTION =
+  "Covison is a completely free CRM for small businesses and teams: contacts, companies, a sales pipeline, tasks, and support tickets in one calm workspace. No trial period, no credit card required, free forever.";
+
+export const metadata: Metadata = {
+  title: "Covison CRM — Free CRM for Small Businesses",
+  description: FREE_CRM_DESCRIPTION,
+  openGraph: {
+    title: "Covison CRM — Free CRM for Small Businesses",
+    description: FREE_CRM_DESCRIPTION,
+    url: "/",
+    siteName: "Covison CRM",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Covison CRM — Free CRM for Small Businesses",
+    description: FREE_CRM_DESCRIPTION,
+  },
+};
+
+const SOFTWARE_APPLICATION_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Covison CRM",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description: FREE_CRM_DESCRIPTION,
+  url: "https://crm.covison.com",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+};
 
 // Deliberately not gated by requireOrgContext() or any redirect, this
 // route renders identically for every visitor, signed in or not, and
@@ -25,6 +62,10 @@ import { SiteFooter } from "@/components/marketing/site-footer";
 export default function Home() {
   return (
     <div className="flex min-h-svh flex-col bg-bg">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SOFTWARE_APPLICATION_JSON_LD) }}
+      />
       <SiteHeader />
       <main className="flex-1">
         <Hero />
@@ -62,6 +103,7 @@ export default function Home() {
         <Differentiation />
         <BrandSection />
         <Testimonial />
+        <Faq />
         <FinalCta />
       </main>
       <SiteFooter />

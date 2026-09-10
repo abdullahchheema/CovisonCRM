@@ -14,6 +14,9 @@ const hasEnvVars = Boolean(
 // doesn't skip them; they must be listed here explicitly or every browser
 // request for the favicon/OG image gets redirected to login instead of an
 // image, same as /privacy and /terms would without this entry.
+// /robots.txt, /sitemap.xml, and /llms.txt need the same treatment: proxy.ts's
+// matcher only excludes image extensions, not .txt/.xml, so without this a
+// crawler hitting any of them gets a 307 to /auth/login instead of the file.
 const PUBLIC_PATH_PREFIXES = [
   "/auth",
   "/privacy",
@@ -21,6 +24,9 @@ const PUBLIC_PATH_PREFIXES = [
   "/icon",
   "/apple-icon",
   "/opengraph-image",
+  "/robots.txt",
+  "/sitemap.xml",
+  "/llms.txt",
 ];
 
 function isPublicPath(pathname: string): boolean {
