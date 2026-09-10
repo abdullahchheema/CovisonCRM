@@ -39,7 +39,11 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="border-t border-line-soft px-6 py-6 text-center text-xs text-text-3">
-        &copy; {new Date().getFullYear()} Covison. All rights reserved.
+        &copy; {new Date().getFullYear()} Covison. All rights reserved. A product of{" "}
+        <a href="https://covison.com" className="hover:text-foreground">
+          Covison
+        </a>
+        .
       </div>
     </footer>
   );
