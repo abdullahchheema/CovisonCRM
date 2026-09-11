@@ -22,6 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
+import { sendInviteEmail } from "@/lib/email/send-invite-email";
 
 const ROLE_OPTIONS = ["admin", "manager", "member", "viewer"] as const;
 
@@ -32,9 +33,16 @@ const inviteSchema = z.object({
 
 type InviteFormValues = z.infer<typeof inviteSchema>;
 
-export function InviteMemberDialog({ organizationId }: { organizationId: string }) {
+export function InviteMemberDialog({
+  organizationId,
+  organizationName,
+}: {
+  organizationId: string;
+  organizationName: string;
+}) {
   const [open, setOpen] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [emailSentTo, setEmailSentTo] = useState<string | null>(null);
   const router = useRouter();
   const {
     register,
@@ -65,7 +73,14 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
       return;
     }
 
-    setInviteLink(`${window.location.origin}/invite/${token}`);
+    const link = `${window.location.origin}/invite/${token}`;
+    setInviteLink(link);
+
+    const emailResult = await sendInviteEmail(values.email, organizationName, link);
+    if (emailResult.ok) {
+      setEmailSentTo(values.email);
+    }
+
     router.refresh();
   };
 
@@ -74,6 +89,7 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
     if (!next) {
       reset();
       setInviteLink(null);
+      setEmailSentTo(null);
     }
   };
 
@@ -86,13 +102,18 @@ export function InviteMemberDialog({ organizationId }: { organizationId: string 
         <DialogHeader>
           <DialogTitle>Invite a team member</DialogTitle>
           <DialogDescription>
-            There&apos;s no email sending set up yet, so you&apos;ll get a link
-            to share yourself (Slack, email, however). It expires in 7 days.
+            Creates an invite link, valid for 7 days, and emails it to them
+            automatically if email sending is set up.
           </DialogDescription>
         </DialogHeader>
 
         {inviteLink ? (
           <div className="flex flex-col gap-4">
+            <p className="text-sm text-text-2">
+              {emailSentTo
+                ? `We've emailed the invite to ${emailSentTo}. You can also share the link directly:`
+                : "Couldn't send an email automatically (no email provider configured, or the send failed), so share this link yourself:"}
+            </p>
             <div className="grid gap-2">
               <Label>Invite link</Label>
               <div className="flex gap-2">

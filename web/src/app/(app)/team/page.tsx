@@ -30,7 +30,10 @@ export default async function TeamPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <PageHeader title="Team" actions={<InviteMemberDialog organizationId={org.id} />} />
+      <PageHeader
+        title="Team"
+        actions={<InviteMemberDialog organizationId={org.id} organizationName={org.name} />}
+      />
 
       {membersError && <p className="text-sm text-danger">{membersError.message}</p>}
 
