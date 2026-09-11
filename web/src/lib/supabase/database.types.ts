@@ -924,6 +924,120 @@ export type Database = {
         };
         Relationships: [];
       };
+      follow_up_sequences: {
+        Row: {
+          id: string;
+          organization_id: string;
+          name: string;
+          description: string | null;
+          is_active: boolean;
+          created_by: string | null;
+          created_at: string;
+          updated_at: string;
+          deleted_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          name: string;
+          description?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          name?: string;
+          description?: string | null;
+          is_active?: boolean;
+          created_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+          deleted_at?: string | null;
+        };
+        Relationships: [];
+      };
+      follow_up_sequence_steps: {
+        Row: {
+          id: string;
+          organization_id: string;
+          sequence_id: string;
+          position: number;
+          delay_days: number;
+          email_template_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          sequence_id: string;
+          position: number;
+          delay_days: number;
+          email_template_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          sequence_id?: string;
+          position?: number;
+          delay_days?: number;
+          email_template_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      follow_up_enrollments: {
+        Row: {
+          id: string;
+          organization_id: string;
+          sequence_id: string;
+          contact_id: string;
+          status: string;
+          current_step_position: number;
+          next_run_at: string;
+          enrolled_at: string;
+          enrolled_by: string | null;
+          stopped_at: string | null;
+          stopped_reason: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          organization_id: string;
+          sequence_id: string;
+          contact_id: string;
+          status?: string;
+          current_step_position?: number;
+          next_run_at: string;
+          enrolled_at?: string;
+          enrolled_by?: string | null;
+          stopped_at?: string | null;
+          stopped_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          organization_id?: string;
+          sequence_id?: string;
+          contact_id?: string;
+          status?: string;
+          current_step_position?: number;
+          next_run_at?: string;
+          enrolled_at?: string;
+          enrolled_by?: string | null;
+          stopped_at?: string | null;
+          stopped_reason?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       notifications: {
         Row: {
           id: string;
@@ -1026,6 +1140,14 @@ export type Database = {
       };
       mark_contact_contacted: {
         Args: { p_contact_id: string };
+        Returns: void;
+      };
+      enroll_contact_in_sequence: {
+        Args: { p_sequence_id: string; p_contact_id: string };
+        Returns: string;
+      };
+      stop_enrollment: {
+        Args: { p_enrollment_id: string; p_reason?: string | null };
         Returns: void;
       };
     };

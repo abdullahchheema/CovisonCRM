@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/emails/templates", label: "Templates" },
   { href: "/emails/groups", label: "Groups" },
+  { href: "/emails/sequences", label: "Follow-ups" },
 ];
 
 export function EmailNavTabs() {

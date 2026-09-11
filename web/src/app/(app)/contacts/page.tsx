@@ -16,6 +16,7 @@ export default async function ContactsPage() {
     { data: tags },
     { data: savedViews },
     { data: emailTemplates },
+    { data: sequences },
     { data: leadTypeRows },
   ] = await Promise.all([
       supabase
@@ -44,6 +45,11 @@ export default async function ContactsPage() {
       supabase
         .from("email_templates")
         .select("id, name, subject")
+        .is("deleted_at", null)
+        .order("name"),
+      supabase
+        .from("follow_up_sequences")
+        .select("id, name")
         .is("deleted_at", null)
         .order("name"),
       supabase
@@ -113,6 +119,7 @@ export default async function ContactsPage() {
           tagsByContactId={tagsByContactId}
           savedViews={savedViews ?? []}
           emailTemplates={emailTemplates ?? []}
+          sequences={sequences ?? []}
           leadTypes={leadTypes}
           leadTypeNameById={leadTypeNameById}
         />

@@ -28,7 +28,8 @@ type SoftDeletableTable =
   | "project_todos"
   | "email_groups"
   | "email_templates"
-  | "lead_types";
+  | "lead_types"
+  | "follow_up_sequences";
 
 interface SoftDeleteButtonProps {
   table: SoftDeletableTable;

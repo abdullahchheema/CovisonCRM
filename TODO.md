@@ -11,16 +11,20 @@ deleting them, so history of what shipped stays visible.
       Supabase project, done (confirmed indirectly: the seed script inserts
       into tickets/projects/email_groups/saved_views successfully).
 - [x] Apply `20260906000001_lead_types_and_custom_fields`, done.
-- [ ] Apply `20260911000001_fix_invite_pgcrypto_search_path` to the live
-      Supabase project. Fixes "Invite member" throwing `function
-      gen_random_bytes(integer) does not exist`: Supabase-hosted projects
-      install pgcrypto into the `extensions` schema, not `public`, so
-      `invite_member`/`accept_invitation`'s `set search_path = public` never
-      had it on the path. Couldn't verify locally this session (no Docker in
-      this environment) so test the invite flow end to end after applying.
-- [ ] Apply `20260911000002_contacted_stage_and_auto_move` to the live
-      Supabase project. Adds a "Contacted" pipeline stage and
-      `mark_contact_contacted()`, see the Done entry below for what it does.
+- [x] Apply `20260911000001_fix_invite_pgcrypto_search_path`, done and
+      confirmed working (invite flow tested).
+- [x] Apply `20260911000002_contacted_stage_and_auto_move`, done. Its
+      behavior has since been revised, see the next item.
+- [ ] Apply `20260911000003_contact_auto_create_first_stage` to the live
+      Supabase project. Revises 20260911000002: that one added a dedicated
+      "Contacted" stage and only moved an *existing* deal into it; what was
+      actually wanted was simpler, a contacted lead with no deal yet gets
+      one created fresh in the pipeline's actual first stage ("Lead" in the
+      default seed), and a contact who already has an open deal is left
+      wherever it's been manually moved to. This migration removes the
+      "Contacted" stage 002 added (moving anything already in it back to
+      the first stage first, so the FK doesn't block the drop) and replaces
+      `mark_contact_contacted()` accordingly.
 - [ ] Create a Resend account, add `RESEND_API_KEY` (and `RESEND_FROM_EMAIL`
       once a sending domain is verified in Resend) as env vars in Vercel.
       Without `RESEND_API_KEY`, "Send email" fails with a clear
@@ -29,11 +33,24 @@ deleting them, so history of what shipped stays visible.
       Resend's shared `onboarding@resend.dev`, which only delivers to the
       email the Resend account itself signed up with, fine for a first
       test send, not for real contacts.
+- [ ] Apply `20260911000004_follow_up_sequences` to the live Supabase
+      project. Adds the three tables and two RPCs behind the new
+      Emails → Follow-ups feature, see the Done entry below.
+- [ ] Set `CRON_SECRET` (any random value, e.g. `openssl rand -hex 32`) as
+      a Vercel env var, matching value the daily follow-up cron checks for.
+      Vercel automatically sends it as a Bearer token to cron-triggered
+      requests once set; without it, `/api/cron/follow-ups` always 401s
+      and no follow-up ever sends, even with steps due.
+- [ ] Set `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project
+      Settings → API) as a Vercel env var. The follow-up cron has no
+      signed-in user for RLS to check against, so it's the one place in
+      the app that needs this. Never used anywhere else.
 - [ ] Run `supabase gen types typescript` against the live project after
-      applying the migration above, to replace the hand-added
-      `mark_contact_contacted` entry in `database.types.ts` (added by hand
-      this session since regenerating needs live DB access) with the real
-      generated one.
+      applying the migrations above, to replace the hand-added
+      `mark_contact_contacted`/`enroll_contact_in_sequence`/
+      `stop_enrollment`/follow_up_* entries in `database.types.ts` (added
+      by hand this session since regenerating needs live DB access) with
+      the real generated ones.
 - [ ] Vercel: set Production Branch to `web-app` (Project Settings → Git).
       Pushes currently deploy as *Preview* only, so the live URL keeps
       serving an older commit until each deployment is promoted by hand.
@@ -86,15 +103,31 @@ accounts) or worth asking the user for direction on:
 
 ## Done (recent)
 
+- [x] Follow-up sequences (Emails → Follow-ups): ordered steps (email
+      template + days-since-previous-step delay, 7/14/21/30 offered as
+      quick-picks but any value works), enroll one or several contacts
+      from the Contacts list, a per-sequence detail page listing every
+      enrollment with its next-due date (overdue ones called out) and a
+      Stop action. A daily Vercel Cron job (`vercel.json`,
+      `app/api/cron/follow-ups`) sends whichever step is due using the
+      same Resend send path as manual sends, then advances the enrollment
+      or marks it completed. Uses a service-role Supabase client
+      (`lib/supabase/service-role.ts`) since a cron run has no signed-in
+      user, gated by `CRON_SECRET` (see Action needed above); needs both
+      that and `SUPABASE_SERVICE_ROLE_KEY` set before it actually runs.
+      Modeled on HubSpot Sequences / Salesforce cadences: enroll, timed
+      steps, runs until done or manually stopped.
 - [x] Real email sending via Resend, replacing the log-only placeholder.
       Per-recipient personalization ({{name}}, {{first_name}}, {{email}},
       {{company}}), click-to-insert placeholder pills in the template
-      editor, and `mark_contact_contacted()`: after a send, the contact's
-      single most-recently-created open deal auto-moves to a new
-      "Contacted" pipeline stage (added after the first stage of every
-      pipeline). No open deal, or a custom pipeline with no Contacted
-      stage, is a no-op, nothing is auto-created. Needs `RESEND_API_KEY`
-      set (see Action needed above) to actually send.
+      editor, and `mark_contact_contacted()`: after a send, a contact with
+      no open deal yet gets one created fresh in the org's default
+      pipeline's first stage; a contact already somewhere in the pipeline
+      is left alone, a follow-up email shouldn't undo progress made moving
+      it by hand. (First version of this auto-moved an *existing* deal into
+      a dedicated new "Contacted" stage instead, revised per the user's
+      correction, see migration 20260911000003.) Needs `RESEND_API_KEY` set
+      (see Action needed above) to actually send.
 - [x] App shell layout fix: sidebar now scrolls independently from the main
       panel instead of both sharing one page-level scroll (was pushing
       Team/Settings far down the sidebar on any tall page).

@@ -17,6 +17,9 @@ const hasEnvVars = Boolean(
 // /robots.txt, /sitemap.xml, and /llms.txt need the same treatment: proxy.ts's
 // matcher only excludes image extensions, not .txt/.xml, so without this a
 // crawler hitting any of them gets a 307 to /auth/login instead of the file.
+// /api/cron has no signed-in user at all (Vercel Cron calls it directly),
+// it authenticates itself by checking CRON_SECRET in the route handler
+// instead, so it needs the same bypass for a different reason.
 const PUBLIC_PATH_PREFIXES = [
   "/auth",
   "/privacy",
@@ -27,6 +30,7 @@ const PUBLIC_PATH_PREFIXES = [
   "/robots.txt",
   "/sitemap.xml",
   "/llms.txt",
+  "/api/cron",
 ];
 
 function isPublicPath(pathname: string): boolean {
