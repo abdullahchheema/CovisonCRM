@@ -1,16 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-
-const RESEND_API_URL = "https://api.resend.com/emails";
-
-// {{name}}, {{first_name}}, {{email}}, {{company}} — kept to fields every
-// contact actually has, documented next to the body field in the template
-// editor so what you can type there and what actually gets substituted
-// never drift apart.
-function renderTemplate(text: string, vars: Record<string, string>): string {
-  return text.replace(/\{\{\s*(\w+)\s*\}\}/g, (_match, key: string) => vars[key] ?? "");
-}
+import { renderAndSendTemplate } from "@/lib/email/render-and-send";
 
 export interface SendTemplateEmailResult {
   sent: number;
@@ -31,16 +22,6 @@ export async function sendTemplateEmail(
   if (contactIds.length === 0) {
     return { sent: 0, failed: 0, errors: [] };
   }
-
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    return {
-      sent: 0,
-      failed: contactIds.length,
-      errors: ["No email provider is configured (RESEND_API_KEY is not set)."],
-    };
-  }
-  const fromAddress = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
   const supabase = await createClient();
 
@@ -79,53 +60,29 @@ export async function sendTemplateEmail(
   const errors: string[] = [];
 
   for (const contact of contacts) {
-    if (!contact.email) {
-      errors.push(`${contact.name}: no email address on file`);
+    const companyName = contact.company_id ? (companyNameById.get(contact.company_id) ?? "") : "";
+    const result = await renderAndSendTemplate(template, contact, companyName);
+
+    if (!result.ok) {
+      errors.push(`${contact.name}: ${result.error}`);
       continue;
     }
 
-    const vars = {
-      name: contact.name,
-      first_name: contact.name?.split(" ")[0] ?? "",
-      email: contact.email,
-      company: contact.company_id ? (companyNameById.get(contact.company_id) ?? "") : "",
-    };
+    sent += 1;
 
-    const subject = renderTemplate(template.subject, vars);
-    const html = renderTemplate(template.body, vars).replace(/\n/g, "<br>");
+    await supabase.from("activities").insert({
+      organization_id: organizationId,
+      type: "email",
+      body: `Sent "${template.name}", ${template.subject}`,
+      contact_id: contact.id,
+    });
 
-    try {
-      const response = await fetch(RESEND_API_URL, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ from: fromAddress, to: contact.email, subject, html }),
-      });
-
-      if (!response.ok) {
-        const body = await response.text();
-        errors.push(`${contact.name}: ${body || response.statusText}`);
-        continue;
-      }
-
-      sent += 1;
-
-      await supabase.from("activities").insert({
-        organization_id: organizationId,
-        type: "email",
-        body: `Sent "${template.name}", ${template.subject}`,
-        contact_id: contact.id,
-      });
-
-      // Best-effort: a contact with no open deal, or a custom pipeline with
-      // no "Contacted" stage, is a normal no-op inside this function, not a
-      // send failure, so its result is deliberately not checked here.
-      await supabase.rpc("mark_contact_contacted", { p_contact_id: contact.id });
-    } catch (err) {
-      errors.push(`${contact.name}: ${err instanceof Error ? err.message : "failed to send"}`);
-    }
+    // Best-effort: creates a deal in the org's default pipeline's first
+    // stage if this contact doesn't have an open one yet; a contact
+    // already somewhere in the pipeline is left alone (a follow-up email
+    // shouldn't undo progress someone made moving it by hand). Result is
+    // deliberately not checked, this is a side effect, not a send failure.
+    await supabase.rpc("mark_contact_contacted", { p_contact_id: contact.id });
   }
 
   return { sent, failed: contacts.length - sent, errors };
