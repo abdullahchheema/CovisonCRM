@@ -27,6 +27,7 @@ export default async function TeamPage() {
       ? await supabase.from("profiles").select("id, email, full_name").in("id", userIds)
       : { data: [] as { id: string; email: string; full_name: string | null }[] };
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
+  const ownerCount = (members ?? []).filter((m) => m.role === "owner").length;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -53,6 +54,7 @@ export default async function TeamPage() {
                 }
                 role={member.role}
                 isSelf={member.user_id === profile.id}
+                isOnlyOwner={member.role === "owner" && ownerCount === 1}
               />
             );
           })}

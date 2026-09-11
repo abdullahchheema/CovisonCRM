@@ -1,21 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { BrandSpinner } from "@/components/brand/brand-spinner";
 import { createClient } from "@/lib/supabase/client";
 
 export function StopEnrollmentButton({ enrollmentId }: { enrollmentId: string }) {
-  const [isStopping, setIsStopping] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [isRefreshing, startTransition] = useTransition();
   const router = useRouter();
 
   const handleStop = async () => {
-    setIsStopping(true);
+    setIsMutating(true);
     const supabase = createClient();
     const { error } = await supabase.rpc("stop_enrollment", { p_enrollment_id: enrollmentId });
-    setIsStopping(false);
+    setIsMutating(false);
 
     if (error) {
       toast.error(error.message);
@@ -23,12 +25,16 @@ export function StopEnrollmentButton({ enrollmentId }: { enrollmentId: string })
     }
 
     toast.success("Follow-up stopped");
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
+  const busy = isMutating || isRefreshing;
+
   return (
-    <Button variant="outline" size="sm" onClick={handleStop} disabled={isStopping}>
-      {isStopping ? "Stopping..." : "Stop"}
+    <Button variant="outline" size="sm" onClick={handleStop} disabled={busy}>
+      {busy ? <BrandSpinner className="size-4" /> : "Stop"}
     </Button>
   );
 }

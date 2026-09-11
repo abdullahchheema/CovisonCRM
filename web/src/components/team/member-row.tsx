@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -15,6 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { BrandSpinner } from "@/components/brand/brand-spinner";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -27,12 +28,15 @@ interface MemberRowProps {
   displayName: string;
   role: string;
   isSelf: boolean;
+  isOnlyOwner: boolean;
 }
 
-export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRowProps) {
+export function MemberRow({ membershipId, displayName, role, isSelf, isOnlyOwner }: MemberRowProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRefreshing, startTransition] = useTransition();
   const [confirmRemove, setConfirmRemove] = useState(false);
   const router = useRouter();
+  const busy = isUpdating || isRefreshing;
 
   const handleRoleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newRole = e.target.value as OrgRole;
@@ -61,7 +65,9 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
     }
 
     toast.success("Role updated");
-    router.refresh();
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
   const handleRemove = async () => {
@@ -86,14 +92,21 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
     }
 
     toast.success("Member removed");
-    router.refresh();
+    // startTransition: keeps the row's controls busy for the whole
+    // refetch-and-rerender, not just the mutation, so the row stays in a
+    // visibly-busy state right up until it's actually gone from the
+    // refreshed list.
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
-  if (isSelf) {
-    // Deliberately no self-service role change or self-removal here, the
-    // schema has no "must have at least one owner" constraint, so the
-    // simplest safe guard against a sole owner locking themselves out is
-    // just not offering the control on your own row at all.
+  // Blocked only when acting on yourself would risk it: a non-owner
+  // managing their own row, or the sole owner (the schema has no "must
+  // have at least one owner" constraint, so this is the only thing
+  // stopping a lockout). A second owner can freely demote or remove the
+  // first, and vice versa.
+  if (isSelf && (role !== "owner" || isOnlyOwner)) {
     return (
       <li className="flex items-center justify-between text-sm">
         <span className="text-foreground">{displayName} (you)</span>
@@ -111,7 +124,7 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
         <Select
           value={role}
           onChange={handleRoleChange}
-          disabled={isUpdating}
+          disabled={busy}
           className="h-7 w-28 text-xs capitalize"
         >
           {ROLE_OPTIONS.map((r) => (
@@ -125,7 +138,7 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
             variant="outline"
             size="sm"
             onClick={() => setConfirmRemove(true)}
-            disabled={isUpdating}
+            disabled={busy}
           >
             Remove
           </Button>
@@ -141,8 +154,8 @@ export function MemberRow({ membershipId, displayName, role, isSelf }: MemberRow
               <Button variant="outline" onClick={() => setConfirmRemove(false)}>
                 Cancel
               </Button>
-              <Button variant="destructive" onClick={handleRemove} disabled={isUpdating}>
-                {isUpdating ? "Removing..." : "Remove"}
+              <Button variant="destructive" onClick={handleRemove} disabled={busy}>
+                {busy ? <BrandSpinner className="size-4" /> : "Remove"}
               </Button>
             </DialogFooter>
           </DialogContent>

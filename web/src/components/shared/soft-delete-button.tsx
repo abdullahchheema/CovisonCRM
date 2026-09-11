@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
@@ -14,6 +14,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { BrandSpinner } from "@/components/brand/brand-spinner";
 import { createClient } from "@/lib/supabase/client";
 import type { Database } from "@/lib/supabase/database.types";
 
@@ -47,11 +48,12 @@ export function SoftDeleteButton({
   redirectTo,
 }: SoftDeleteButtonProps) {
   const [open, setOpen] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [isRefreshing, startTransition] = useTransition();
   const router = useRouter();
 
   const handleDelete = async () => {
-    setIsDeleting(true);
+    setIsMutating(true);
     const supabase = createClient();
     // Soft delete, deleted_at, never a hard DELETE, so activity history
     // and any references stay intact rather than cascading destructively.
@@ -60,7 +62,7 @@ export function SoftDeleteButton({
       .update({ deleted_at: new Date().toISOString() } as Database["public"]["Tables"][typeof table]["Update"])
       .eq("id", id);
 
-    setIsDeleting(false);
+    setIsMutating(false);
 
     if (error) {
       toast.error(error.message);
@@ -69,14 +71,23 @@ export function SoftDeleteButton({
 
     toast.success(`${label} deleted`);
     setOpen(false);
-    if (redirectTo) router.push(redirectTo);
-    router.refresh();
+    // startTransition, not a plain call: keeps isPending true for the
+    // whole navigate-and-refetch, not just the mutation above, so the
+    // dialog's button stays busy right up until the item is actually gone
+    // from the list, instead of resetting to normal while the now-stale
+    // row still sits there for another moment.
+    startTransition(() => {
+      if (redirectTo) router.push(redirectTo);
+      router.refresh();
+    });
   };
+
+  const busy = isMutating || isRefreshing;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <Button variant="destructive" size="sm" onClick={() => setOpen(true)}>
-        <Trash2 /> Delete
+      <Button variant="destructive" size="sm" onClick={() => setOpen(true)} disabled={busy}>
+        {busy ? <BrandSpinner className="size-4" /> : <Trash2 />} Delete
       </Button>
       <DialogContent>
         <DialogHeader>
@@ -90,8 +101,8 @@ export function SoftDeleteButton({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button variant="destructive" onClick={handleDelete} disabled={isDeleting}>
-            {isDeleting ? "Deleting..." : "Delete"}
+          <Button variant="destructive" onClick={handleDelete} disabled={busy}>
+            {busy ? <BrandSpinner className="size-4" /> : "Delete"}
           </Button>
         </DialogFooter>
       </DialogContent>

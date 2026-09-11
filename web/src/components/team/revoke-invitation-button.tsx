@@ -1,18 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import { BrandSpinner } from "@/components/brand/brand-spinner";
 import { createClient } from "@/lib/supabase/client";
 
 export function RevokeInvitationButton({ invitationId }: { invitationId: string }) {
-  const [isRevoking, setIsRevoking] = useState(false);
+  const [isMutating, setIsMutating] = useState(false);
+  const [isRefreshing, startTransition] = useTransition();
   const router = useRouter();
 
   const handleRevoke = async () => {
-    setIsRevoking(true);
+    setIsMutating(true);
     const supabase = createClient();
     // organization_invitations_update's RLS policy has the owner/admin role
     // check in USING, not just WITH CHECK (same pattern verified against
@@ -28,7 +30,7 @@ export function RevokeInvitationButton({ invitationId }: { invitationId: string 
       .eq("id", invitationId)
       .select()
       .single();
-    setIsRevoking(false);
+    setIsMutating(false);
 
     if (error) {
       toast.error(
@@ -40,12 +42,21 @@ export function RevokeInvitationButton({ invitationId }: { invitationId: string 
     }
 
     toast.success("Invitation revoked");
-    router.refresh();
+    // startTransition, not a plain call: keeps isPending true for the
+    // whole refetch-and-rerender, not just the mutation above, so the
+    // button stays in its busy state right up until the row is actually
+    // gone, instead of resetting to normal while the stale row still sits
+    // there for another moment.
+    startTransition(() => {
+      router.refresh();
+    });
   };
 
+  const busy = isMutating || isRefreshing;
+
   return (
-    <Button variant="outline" size="sm" onClick={handleRevoke} disabled={isRevoking}>
-      {isRevoking ? "Revoking..." : "Revoke"}
+    <Button variant="outline" size="sm" onClick={handleRevoke} disabled={busy}>
+      {busy ? <BrandSpinner className="size-4" /> : "Revoke"}
     </Button>
   );
 }

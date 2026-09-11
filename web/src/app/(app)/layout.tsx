@@ -1,6 +1,7 @@
 import { requireOrgContext } from "@/lib/supabase/org-context";
 import { CommandPalette } from "@/components/command-palette";
 import { NotificationBell } from "@/components/notification-bell";
+import { CriticalNotificationListener } from "@/components/critical-notification-listener";
 import { SidebarContent } from "@/components/shell/sidebar-content";
 import { MobileSidebar } from "@/components/shell/mobile-sidebar";
 
@@ -29,6 +30,7 @@ export default async function AppLayout({
 
   return (
     <div className="flex h-svh w-full overflow-hidden bg-bg">
+      <CriticalNotificationListener userId={profile.id} />
       {/* Sidebar: tonal surface-2, borderless. The tone shift against the
           bg-bg main column does the separating work instead of a border.
           Hidden below md. MobileSidebar's drawer (triggered from the

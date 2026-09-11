@@ -25,26 +25,19 @@ deleting them, so history of what shipped stays visible.
       "Contacted" stage 002 added (moving anything already in it back to
       the first stage first, so the FK doesn't block the drop) and replaces
       `mark_contact_contacted()` accordingly.
-- [ ] Create a Resend account, add `RESEND_API_KEY` (and `RESEND_FROM_EMAIL`
-      once a sending domain is verified in Resend) as env vars in Vercel.
-      Without `RESEND_API_KEY`, "Send email" fails with a clear
-      "no email provider configured" error rather than silently no-op'ing.
-      Until a domain is verified, `RESEND_FROM_EMAIL` falls back to
-      Resend's shared `onboarding@resend.dev`, which only delivers to the
-      email the Resend account itself signed up with, fine for a first
-      test send, not for real contacts.
+- [x] Create a Resend account, add `RESEND_API_KEY` as a Vercel env var,
+      done. `RESEND_FROM_EMAIL` (needs a verified sending domain in Resend)
+      still worth doing before sending to real contacts, not just your own
+      Resend signup address, your call on timing.
 - [ ] Apply `20260911000004_follow_up_sequences` to the live Supabase
       project. Adds the three tables and two RPCs behind the new
       Emails → Follow-ups feature, see the Done entry below.
-- [ ] Set `CRON_SECRET` (any random value, e.g. `openssl rand -hex 32`) as
-      a Vercel env var, matching value the daily follow-up cron checks for.
-      Vercel automatically sends it as a Bearer token to cron-triggered
-      requests once set; without it, `/api/cron/follow-ups` always 401s
-      and no follow-up ever sends, even with steps due.
-- [ ] Set `SUPABASE_SERVICE_ROLE_KEY` (Supabase dashboard → Project
-      Settings → API) as a Vercel env var. The follow-up cron has no
-      signed-in user for RLS to check against, so it's the one place in
-      the app that needs this. Never used anywhere else.
+- [x] Set `CRON_SECRET` as a Vercel env var, done.
+- [x] Set `SUPABASE_SERVICE_ROLE_KEY` as a Vercel env var, done.
+- [ ] Apply `20260911000005_realtime_removal_notification` to the live
+      Supabase project. Adds the trigger and Realtime publication entry
+      behind the new "you were removed" live notice, see the Done entry
+      below.
 - [ ] Run `supabase gen types typescript` against the live project after
       applying the migrations above, to replace the hand-added
       `mark_contact_contacted`/`enroll_contact_in_sequence`/
@@ -58,14 +51,12 @@ deleting them, so history of what shipped stays visible.
       point at the live Vercel domain. Never verified after the original
       localhost:3000 OAuth misredirect; the stray `?code=...` seen on the
       homepage suggests it may still be wrong.
-- [ ] Replace the placeholder text on `/privacy` and `/terms` with real,
-      reviewed policy text before the app handles real user data. Both
-      pages carry a visible placeholder banner until then.
-- [ ] Optional: re-cut the logo as a true vector. `public/logo-mark.png` is
-      a 512px raster traced out of the supplied JPEG (background removed).
-      It's sharp at every size the app currently renders it, so this is
-      polish, not a defect, worth doing if the mark ever needs to go large
-      (print, billboard, big hero lockup).
+- [x] Replace the placeholder text on `/privacy` and `/terms` with real
+      policy text naming the actual operating entity, done. Not lawyer-
+      reviewed, worth having an actual solicitor look over before this
+      handles real customer data at scale (flagged when it shipped).
+- [x] Logo mark, `public/logo-mark.png` is now the real asset pulled
+      directly from covison.com, not a traced raster, done.
 - [ ] Decide on merging `hotfix/w0-security-hardening` into `master` (legacy
       Go app security patches, JWT leak, permission checks, token expiry).
       Merging triggers a live deploy of the old app, so left for your call.
@@ -103,6 +94,39 @@ accounts) or worth asking the user for direction on:
 
 ## Done (recent)
 
+- [x] Fixed a real crash: removing a member left their `profiles.active_
+      organization_id` pointing at an org they could no longer see (RLS),
+      and `requireOrgContext()` redirected to `/onboarding` without
+      clearing it, so onboarding's own "already in a workspace" check
+      bounced them straight back, forever (ERR_TOO_MANY_REDIRECTS). Now
+      clears the stale pointer before redirecting.
+- [x] Team page: an owner could never act on their own row (by design, no
+      "must have one owner" DB constraint), which in a single-owner org
+      reads as "no one can remove the owner." Now only blocks it when
+      you're the *sole* owner; a second owner can freely demote or remove
+      the first, and vice versa.
+- [x] Live "you were removed" notice: the removed member's already-open
+      tab shows a dialog immediately, no reload needed, sending them to
+      login on acknowledgement. Built on the existing notifications
+      table/RLS (independent of org membership, which is what makes it
+      work despite the very event being announced revoking that
+      membership) plus a Realtime subscription
+      (`components/critical-notification-listener.tsx`). One case handled
+      so far; extending to another module's "must-see-it-now" event means
+      inserting a notifications row with a new `type` and a case there,
+      not new realtime plumbing per case.
+- [x] Fixed the real timing bug behind "it said done but the row was
+      still there for a moment": `router.refresh()` wasn't awaited, so a
+      button's pending state ended before the refetch-driven re-render
+      actually removed the item. Wrapped in `useTransition` so the pending
+      state covers the whole round trip, and swapped the label for a
+      small branded spinner (`components/brand/brand-spinner.tsx`, the
+      mark pulsing) during it. Fixed in `SoftDeleteButton` (covers most
+      delete buttons app-wide: contacts/companies/deals/tasks/tickets/
+      projects/templates/sequences/etc.), the team invite revoke and
+      member remove/role-change buttons, and follow-up Stop. Bulk-delete
+      buttons and drag-and-drop persistence weren't touched, same pattern,
+      not done yet if wanted.
 - [x] Follow-up sequences (Emails → Follow-ups): ordered steps (email
       template + days-since-previous-step delay, 7/14/21/30 offered as
       quick-picks but any value works), enroll one or several contacts
