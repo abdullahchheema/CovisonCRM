@@ -35,9 +35,13 @@ export async function requireOrgContext() {
     .single();
 
   // The profile pointed at an org this user is no longer a member of (RLS
-  // hides it) or that no longer exists, either way, back to onboarding
-  // rather than crashing on a null org further down the page.
+  // hides it, e.g. just removed) or that no longer exists. Must clear the
+  // stale pointer before redirecting, not just redirect: /onboarding's own
+  // "already in a workspace, go to /dashboard" check reads this same
+  // column, so leaving it set sent a removed member straight back here,
+  // which sent them back to onboarding, forever (ERR_TOO_MANY_REDIRECTS).
   if (!org) {
+    await supabase.from("profiles").update({ active_organization_id: null }).eq("id", userId);
     redirect("/onboarding");
   }
 
